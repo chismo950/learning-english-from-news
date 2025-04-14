@@ -79,8 +79,6 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
                 <Badge variant="outline" className="mb-2">
                   {item.region}
                 </Badge>
-                <CardTitle className="text-xl">{item.title}</CardTitle>
-                <p className="text-base text-muted-foreground">{item.titleTranslated}</p>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
@@ -89,6 +87,8 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
                 </a>
               </Button>
             </div>
+            <CardTitle className="text-xl">{item.title}</CardTitle>
+            <p className="text-base text-muted-foreground">{item.titleTranslated}</p>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
