@@ -138,6 +138,20 @@ export default function Home() {
       // Save to history
       const today = getTodayString()
       const updatedHistory = { ...history, [today]: data.news }
+      
+      // Keep only the 7 most recent days of history
+      const historyDates = Object.keys(updatedHistory).sort((a, b) => 
+        new Date(b).getTime() - new Date(a).getTime()
+      );
+      
+      // If we have more than 7 days, remove the oldest ones
+      if (historyDates.length > 7) {
+        const datesToRemove = historyDates.slice(7);
+        datesToRemove.forEach(date => {
+          delete updatedHistory[date];
+        });
+      }
+      
       setHistory(updatedHistory)
       localStorage.setItem("newsHistory", JSON.stringify(updatedHistory))
       setHasTodayData(true)
