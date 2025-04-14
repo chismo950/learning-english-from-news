@@ -6,6 +6,7 @@
 - [ ] Only keep 7 days history on frontend
 - [ ] If click the source link in App, use popup webview to review news
 - [ ] After setting preference, don't fetch news immediately, user need to click the fetch button to fetch news, the button show on the bottom of news list, it can be use to refetch today's news
+- [ ] ad AD for AI-Powered Dictionary
 
 ## 🐛 Bugs to Fix
 - [ ] null
