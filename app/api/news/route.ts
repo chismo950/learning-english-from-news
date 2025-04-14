@@ -29,7 +29,7 @@ export async function POST(request: Request) {
      - A translation in ${language} language
   
   IMPORTANT REQUIREMENTS:
-  - If the news is related to China, ONLY cite Chinese media sources.
+  - If the news is related to China, ONLY cite Chinese media sources with domains ending in .cn
   - If the news is not related to China, you can cite any media source worldwide.
   - DO NOT include any news that mentions Chinese leadership by name.
   - DO NOT provide any politically sensitive news related to China.
@@ -59,7 +59,8 @@ export async function POST(request: Request) {
 
       try {
         const { text } = await generateText({
-          model: google("gemini-2.0-flash-exp", {
+          model: google("gemini-2.0-flash", {
+            // The API key will be automatically loaded from GOOGLE_GENERATIVE_AI_API_KEY env variable
             useSearchGrounding: true,
           }),
           prompt,
