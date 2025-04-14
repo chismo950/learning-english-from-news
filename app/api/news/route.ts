@@ -1,5 +1,4 @@
-import { google } from "@ai-sdk/google"
-import { generateText } from "ai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 // Update the POST function to handle markdown-formatted JSON responses
 export async function POST(request: Request) {
@@ -58,15 +57,23 @@ export async function POST(request: Request) {
 `
 
       try {
-        const { text } = await generateText({
-          model: google("gemini-2.0-flash", {
-            // The API key will be automatically loaded from GOOGLE_GENERATIVE_AI_API_KEY env variable
-            useSearchGrounding: true,
-          }),
-          prompt,
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
+        const genModel = genAI.getGenerativeModel({
+          model: 'gemini-2.0-flash',
+          // generationConfig,
+          // systemInstruction,
+          tools: [
+            {
+              // @ts-ignore
+              google_search: {},
+            },
+          ],
         })
-
-        // Extract JSON from the response, handling potential markdown formatting
+        const result = await genModel.generateContent({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        })
+        const response = result.response
+        const text = response.text()
         let jsonText = text
 
         // Remove markdown code block formatting if present
