@@ -8,7 +8,7 @@ import AccentSelector from "@/components/accent-selector"
 import NewsFeed from "@/components/news-feed"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2 } from "lucide-react"
+import { Loader2, Settings, X } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 
@@ -175,8 +175,8 @@ export default function Home() {
         <header className="flex justify-between items-center mb-8">
           <h1 className="text-xl md:text-2xl font-bold">Learning English from News</h1>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowPreferences(!showPreferences)}>
-              {showPreferences ? "Hide" : "Edit"} Preferences
+            <Button variant="outline" size="icon" onClick={() => setShowPreferences(!showPreferences)} aria-label={showPreferences ? "Hide Preferences" : "Edit Preferences"}>
+              {showPreferences ? <X className="h-4 w-4" /> : <Settings className="h-4 w-4" />}
             </Button>
             <ModeToggle />
           </div>
