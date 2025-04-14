@@ -153,6 +153,8 @@ export default function Home() {
     // Hide preferences panel
     setShowPreferences(false)
 
+    fetchNews(); return // fetch anyway even if we have today's data
+
     // Check if we already have today's data
     const today = getTodayString()
     if (history[today] && history[today].length > 0) {
