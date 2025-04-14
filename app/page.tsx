@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
 import LanguageSelector from "@/components/language-selector"
 import RegionSelector from "@/components/region-selector"
@@ -42,6 +42,9 @@ export default function Home() {
   const [currentTab, setCurrentTab] = useState("today")
   const [validationError, setValidationError] = useState<string | null>(null)
   const [hasTodayData, setHasTodayData] = useState(false)
+  const [isSticky, setIsSticky] = useState(false)
+  const [isBannerHidden, setIsBannerHidden] = useState(false)
+  const bannerRef = useRef<HTMLDivElement>(null)
 
   // Get today's date in YYYY-MM-DD format
   const getTodayString = () => {
@@ -99,6 +102,26 @@ export default function Home() {
     setInitialized(true)
   }, [])
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (bannerRef.current) {
+        const headerHeight = 80; // Approximate header height
+        const scrollPosition = window.scrollY;
+        
+        if (scrollPosition > headerHeight) {
+          setIsSticky(true);
+        } else {
+          setIsSticky(false);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   const fetchNews = async () => {
     if (!initialized) return
 
@@ -138,12 +161,12 @@ export default function Home() {
       // Save to history
       const today = getTodayString()
       const updatedHistory = { ...history, [today]: data.news }
-      
+
       // Keep only the 7 most recent days of history
-      const historyDates = Object.keys(updatedHistory).sort((a, b) => 
+      const historyDates = Object.keys(updatedHistory).sort((a, b) =>
         new Date(b).getTime() - new Date(a).getTime()
       );
-      
+
       // If we have more than 7 days, remove the oldest ones
       if (historyDates.length > 7) {
         const datesToRemove = historyDates.slice(7);
@@ -151,7 +174,7 @@ export default function Home() {
           delete updatedHistory[date];
         });
       }
-      
+
       setHistory(updatedHistory)
       localStorage.setItem("newsHistory", JSON.stringify(updatedHistory))
       setHasTodayData(true)
@@ -201,10 +224,14 @@ export default function Home() {
     return Object.keys(history).sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
   }
 
+  const hideBanner = () => {
+    setIsBannerHidden(true);
+  };
+
   return (
     <main className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
+        <header className="flex justify-between items-center mb-4">
           <h1 className="text-xl md:text-2xl font-bold">Learning English from News</h1>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => setShowPreferences(!showPreferences)} aria-label={showPreferences ? "Hide Preferences" : "Edit Preferences"}>
@@ -213,6 +240,33 @@ export default function Home() {
             <ModeToggle />
           </div>
         </header>
+
+        {!isBannerHidden && (
+          <div 
+            ref={bannerRef}
+            className={`mb-4 p-4 border rounded-lg shadow-sm flex items-center justify-between transition-all duration-300 ${
+              isSticky 
+                ? "fixed top-0 left-0 right-0 z-50 max-w-6xl mx-auto rounded-none border-t-0 bg-background" 
+                : "bg-muted/50"
+            }`}
+          >
+            <div>
+              <h3 className="font-medium mb-1">📚 Enhance Your Learning</h3>
+              <p className="text-sm text-muted-foreground">Look up words, get examples, and improve your vocabulary with AI-Powered Dictionary.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="default">
+                <a href="https://english-dictionary.app" target="_blank" rel="noopener noreferrer">Try It Now</a>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={hideBanner} className="ml-1">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Add a spacer div when sticky and not hidden to prevent layout shift */}
+        {isSticky && !isBannerHidden && <div className="mb-4 p-4 opacity-0">Spacer</div>}
 
         {showPreferences && (
           <div className="mb-8 p-6 border rounded-lg shadow-sm">
