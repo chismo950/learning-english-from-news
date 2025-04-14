@@ -244,7 +244,7 @@ export default function Home() {
         {!isBannerHidden && (
           <div 
             ref={bannerRef}
-            className={`mb-4 p-4 border rounded-lg shadow-sm flex items-center justify-between transition-all duration-300 ${
+            className={`mb-4 p-4 border rounded-lg shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-2 transition-all duration-300 ${
               isSticky 
                 ? "fixed top-0 left-0 right-0 z-50 max-w-6xl mx-auto rounded-none border-t-0 bg-background" 
                 : "bg-muted/50"
@@ -254,8 +254,8 @@ export default function Home() {
               <h3 className="font-medium mb-1">📚 Enhance Your Learning</h3>
               <p className="text-sm text-muted-foreground">Look up words, get examples, and improve your vocabulary with AI-Powered Dictionary.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button asChild variant="default">
+            <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+              <Button asChild variant="default" className="flex-grow md:flex-grow-0 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
                 <a href="https://english-dictionary.app" target="_blank" rel="noopener noreferrer">Try It Now</a>
               </Button>
               <Button variant="ghost" size="icon" onClick={hideBanner} className="ml-1">
