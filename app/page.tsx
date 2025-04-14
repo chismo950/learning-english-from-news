@@ -12,6 +12,24 @@ import { Loader2, Settings, X } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 
+// Define interfaces for the news and history data
+interface NewsItem {
+  title: string
+  titleTranslated: string
+  region: string
+  sentences: Array<{
+    english: string
+    translated: string
+  }>
+  source: string
+  sourceUrl: string
+  publishedDate: string
+}
+
+interface NewsHistory {
+  [date: string]: NewsItem[]
+}
+
 export default function Home() {
   const [initialized, setInitialized] = useState(false)
   const [showPreferences, setShowPreferences] = useState(false)
@@ -19,8 +37,8 @@ export default function Home() {
   const [nativeLanguage, setNativeLanguage] = useState("")
   const [selectedRegions, setSelectedRegions] = useState<string[]>([])
   const [accent, setAccent] = useState("en-US")
-  const [newsData, setNewsData] = useState<any[]>([])
-  const [history, setHistory] = useState<{ [key: string]: any[] }>({})
+  const [newsData, setNewsData] = useState<NewsItem[]>([])
+  const [history, setHistory] = useState<NewsHistory>({})
   const [currentTab, setCurrentTab] = useState("today")
   const [validationError, setValidationError] = useState<string | null>(null)
   const [hasTodayData, setHasTodayData] = useState(false)
@@ -38,10 +56,10 @@ export default function Home() {
     const storedHistory = localStorage.getItem("newsHistory")
 
     // Parse stored history
-    let parsedHistory = {}
+    let parsedHistory: NewsHistory = {}
     if (storedHistory) {
       try {
-        parsedHistory = JSON.parse(storedHistory)
+        parsedHistory = JSON.parse(storedHistory) as NewsHistory
         setHistory(parsedHistory)
       } catch (e) {
         console.error("Error parsing stored history:", e)
@@ -51,7 +69,7 @@ export default function Home() {
     // Check if we have today's data
     const today = getTodayString()
     const hasTodaysData = parsedHistory && parsedHistory[today] && parsedHistory[today].length > 0
-    setHasTodayData(hasTodaysData)
+    setHasTodayData(!!hasTodaysData)
 
     // If we have today's data, load it
     if (hasTodaysData) {
