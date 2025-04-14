@@ -39,6 +39,7 @@ export async function POST(request: Request) {
   [
     {
       "title": "Article title",
+      "titleTranslated": "Translated title",
       "region": "${region}",
       "sentences": [
         {

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 
 interface NewsItem {
   title: string
+  titleTranslated: string
   region: string
   sentences: Array<{
     english: string
@@ -79,6 +80,7 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
                   {item.region}
                 </Badge>
                 <CardTitle className="text-xl">{item.title}</CardTitle>
+                <p className="text-base text-muted-foreground">{item.titleTranslated}</p>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
