@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const languages = [
   { code: "mi", name: "Te Reo Māori", flag: "🇳🇿" },
-  { code: "zh-TW", name: "繁體中文", flag: "🇹🇼" },
+  { code: "zh-TW", name: "繁體中文", flag: "🇲🇴" },
   { code: "zh-CN", name: "简体中文", flag: "🇨🇳" },
   { code: "si", name: "සිංහල", flag: "🇱🇰" },
   { code: "de", name: "Deutsch", flag: "🇩🇪" },
