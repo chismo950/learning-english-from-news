@@ -171,7 +171,7 @@ export default function Home() {
     <main className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold">News Language Learning</h1>
+          <h1 className="text-xl md:text-2xl font-bold">Learning English from News</h1>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setShowPreferences(!showPreferences)}>
               {showPreferences ? "Hide" : "Edit"} Preferences
