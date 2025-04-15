@@ -25,10 +25,8 @@ interface NewsFeedProps {
   news: NewsItem[]
   accent: string
   isHistory?: boolean
-  preloadAudio?: boolean // New prop to control preloading
 }
 
-// Map of accent values to language/voice codes for browser TTS
 const ACCENT_TO_VOICE_MAP: Record<string, { lang: string, voiceNames: string[] }> = {
   "en-US": { lang: "en-US", voiceNames: ["Google US English", "Microsoft Aria Online (Natural) - English (United States)", "English (United States)"] },
   "en-GB": { lang: "en-GB", voiceNames: ["Google UK English Female", "Microsoft Sonia Online (Natural) - English (United Kingdom)", "English (United Kingdom)"] },
@@ -39,23 +37,18 @@ const ACCENT_TO_VOICE_MAP: Record<string, { lang: string, voiceNames: string[] }
 export default function NewsFeed({ 
   news, 
   accent, 
-  isHistory = false, 
-  preloadAudio = false // Default to false (no preloading)
+  isHistory = false 
 }: NewsFeedProps) {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [preloadedAudio, setPreloadedAudio] = useState<Record<string, HTMLAudioElement>>({})
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
 
-  // Initialize speech synthesis and load available voices
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      // Get initial list of voices
       const voices = window.speechSynthesis.getVoices()
       setAvailableVoices(voices)
 
-      // Handle voices changing (happens in some browsers after page load)
       const voicesChangedHandler = () => {
         const updatedVoices = window.speechSynthesis.getVoices()
         setAvailableVoices(updatedVoices)
@@ -69,13 +62,11 @@ export default function NewsFeed({
     }
   }, [])
 
-  // Find the best matching voice for the current accent
   const getBestVoiceForAccent = (accentCode: string): SpeechSynthesisVoice | null => {
     if (!availableVoices.length || !window.speechSynthesis) return null
     
-    const accentConfig = ACCENT_TO_VOICE_MAP[accentCode] || ACCENT_TO_VOICE_MAP["en-US"] // default to US accent
+    const accentConfig = ACCENT_TO_VOICE_MAP[accentCode] || ACCENT_TO_VOICE_MAP["en-US"]
     
-    // Try to find a voice that matches one of the preferred voice names
     for (const voiceName of accentConfig.voiceNames) {
       const matchedVoice = availableVoices.find(voice => 
         voice.name.includes(voiceName) || voice.name === voiceName
@@ -83,117 +74,41 @@ export default function NewsFeed({
       if (matchedVoice) return matchedVoice
     }
     
-    // If no match by name, try to find by language
     const langMatch = availableVoices.find(voice => voice.lang === accentConfig.lang)
     if (langMatch) return langMatch
     
-    // If still no match, return any English voice or null
     return availableVoices.find(voice => voice.lang.startsWith('en')) || null
   }
 
-  // Play text using browser's speech synthesis
   const playWithBrowserTTS = (text: string) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return false
     
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel()
     
     const utterance = new SpeechSynthesisUtterance(text)
     
-    // Set the voice based on accent
     const voice = getBestVoiceForAccent(accent)
     if (voice) utterance.voice = voice
     
-    // Set language based on accent
     const accentConfig = ACCENT_TO_VOICE_MAP[accent] || ACCENT_TO_VOICE_MAP["en-US"]
     utterance.lang = accentConfig.lang
     
-    // Start speaking
     window.speechSynthesis.speak(utterance)
     
     return true
   }
 
-  // Preload audio for all sentences - only if preloadAudio is true
-  useEffect(() => {
-    // Skip preloading if the feature is disabled
-    if (!preloadAudio) return;
-    
-    const audioCache: Record<string, HTMLAudioElement> = {}
-    const loadingState: Record<string, boolean> = {}
-    
-    // Create preload function - renamed to avoid conflict with the prop name
-    const preloadAudioFile = (text: string, sentenceId: string) => {
-      const encodedText = encodeURIComponent(text)
-      let audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
-      
-      const audio = new Audio()
-      audio.src = audioUrl
-      
-      // Mark as loading
-      loadingState[sentenceId] = true
-      
-      // When the audio is loaded, update the loading state
-      audio.oncanplaythrough = () => {
-        loadingState[sentenceId] = false
-        setIsLoading({...loadingState})
-      }
-      
-      // Catch any loading errors
-      audio.onerror = () => {
-        console.error(`Failed to preload audio for: ${text}`)
-        loadingState[sentenceId] = false
-        setIsLoading({...loadingState})
-      }
-      
-      // Add to cache
-      audioCache[sentenceId] = audio
-    }
-    
-    // Start preloading all sentences
-    news.forEach((item, index) => {
-      item.sentences.forEach((sentence, idx) => {
-        const sentenceId = `${index}-${idx}`
-        preloadAudioFile(sentence.english, sentenceId)
-      })
-    })
-    
-    // Update state with all preloaded audios and loading status
-    setPreloadedAudio(audioCache)
-    setIsLoading(loadingState)
-    
-    // Cleanup function
-    return () => {
-      // Abort all audio loading on unmount
-      Object.values(audioCache).forEach(audio => {
-        audio.oncanplaythrough = null
-        audio.onerror = null
-        audio.src = ''
-      })
-      
-      // Cancel any speech synthesis
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel()
-      }
-    }
-  }, [news, preloadAudio]) // Added preloadAudio to dependencies
-
   const playSentence = async (text: string, sentenceId: string) => {
-    // Stop any currently playing audio
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current = null
     }
-    // Stop any speech synthesis
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
     setPlayingAudioId(sentenceId)
-    if (!preloadAudio) {
-      setIsLoading(prev => ({ ...prev, [sentenceId]: true }))
-    }
+    setIsLoading(prev => ({ ...prev, [sentenceId]: true }))
     try {
-      // POST 请求 TTS API，获取音频 blob
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,7 +129,6 @@ export default function NewsFeed({
       }
       audio.onerror = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
-        // 尝试浏览器TTS兜底
         const ttsFallbackSuccessful = playWithBrowserTTS(text)
         if (!ttsFallbackSuccessful) {
           console.error('Browser TTS fallback also failed')
@@ -223,7 +137,6 @@ export default function NewsFeed({
       await audio.play()
     } catch (err) {
       setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
-      // 尝试浏览器TTS兜底
       const ttsFallbackSuccessful = playWithBrowserTTS(text)
       if (!ttsFallbackSuccessful) {
         console.error('Browser TTS fallback also failed')
@@ -231,15 +144,12 @@ export default function NewsFeed({
     }
   }
 
-  // Stop all audio playback
   const stopAllAudio = () => {
-    // Stop any currently playing audio
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current = null
     }
     
-    // Stop any speech synthesis
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
@@ -247,7 +157,6 @@ export default function NewsFeed({
     setPlayingAudioId(null)
   }
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       stopAllAudio()
@@ -263,15 +172,12 @@ export default function NewsFeed({
   }
 
   const sortedNews = [...news].sort((a, b) => {
-    // If item a is international news, it should come after item b
     if (a.region === "international" && b.region !== "international") {
       return 1
     }
-    // If item b is international news, it should come after item a
     if (a.region !== "international" && b.region === "international") {
       return -1
     }
-    // Otherwise, keep the original order
     return 0
   })
 
