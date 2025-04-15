@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Play, ExternalLink } from "lucide-react"
@@ -27,24 +27,34 @@ interface NewsFeedProps {
 }
 
 export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedProps) {
-  const [playingAudio, setPlayingAudio] = useState<SpeechSynthesisUtterance | null>(null)
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const playSentence = (text: string) => {
+  const playSentence = (text: string, sentenceId: string) => {
     // Stop any currently playing audio
-    if (playingAudio) {
-      window.speechSynthesis.cancel()
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
     }
 
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = accent
-
-    // Set the utterance and play it
-    setPlayingAudio(utterance)
-    window.speechSynthesis.speak(utterance)
-
+    // Create the API URL with encoded text
+    const encodedText = encodeURIComponent(text)
+    const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
+    
+    // Create and play the audio
+    const audio = new Audio(audioUrl)
+    audioRef.current = audio
+    
+    // Update state to show which sentence is playing
+    setPlayingAudioId(sentenceId)
+    
+    // Play the audio
+    audio.play()
+    
     // Reset when done
-    utterance.onend = () => {
-      setPlayingAudio(null)
+    audio.onended = () => {
+      setPlayingAudioId(null)
+      audioRef.current = null
     }
   }
 
@@ -98,8 +108,8 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 mr-2 rounded-full"
-                      onClick={() => playSentence(sentence.english)}
+                      className={`h-8 w-8 p-0 mr-2 rounded-full ${playingAudioId === `${index}-${idx}` ? 'bg-primary text-primary-foreground' : ''}`}
+                      onClick={() => playSentence(sentence.english, `${index}-${idx}`)}
                     >
                       <Play className="h-4 w-4" />
                       <span className="sr-only">Play</span>
