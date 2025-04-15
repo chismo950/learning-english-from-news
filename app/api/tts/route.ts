@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         contentType
       }, {
         headers: {
-          'Cache-Control': 'public, max-age=86400',
+          'Cache-Control': 'no-cache',
         },
       });
     } else {
@@ -80,7 +80,8 @@ export async function GET(request: NextRequest) {
       return new NextResponse(buffer, {
         headers: {
           'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=86400',
+          'Cache-Control': 'no-cache',
+          'Accept-Ranges': 'none', // 禁止分片请求，防止 content-range 自动添加
         },
       });
     }

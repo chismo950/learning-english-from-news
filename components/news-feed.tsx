@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Play, ExternalLink } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { isIOSorIPad } from "@/lib/utils"
 
 interface NewsItem {
   title: string
@@ -124,7 +125,10 @@ export default function NewsFeed({
     // Create preload function - renamed to avoid conflict with the prop name
     const preloadAudioFile = (text: string, sentenceId: string) => {
       const encodedText = encodeURIComponent(text)
-      const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
+      let audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
+      if (isIOSorIPad()) {
+        audioUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p364&text=${encodedText}`;
+      }
       
       const audio = new Audio()
       audio.src = audioUrl
@@ -233,7 +237,10 @@ export default function NewsFeed({
     } else {
       // Load audio on demand
       const encodedText = encodeURIComponent(text)
-      const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
+      let audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
+      if (isIOSorIPad()) {
+        audioUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p364&text=${encodedText}`;
+      }
       
       // Create and play the audio
       const audio = new Audio(audioUrl)
