@@ -24,21 +24,105 @@ interface NewsFeedProps {
   news: NewsItem[]
   accent: string
   isHistory?: boolean
+  preloadAudio?: boolean // New prop to control preloading
 }
 
-export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedProps) {
+// Map of accent values to language/voice codes for browser TTS
+const ACCENT_TO_VOICE_MAP: Record<string, { lang: string, voiceNames: string[] }> = {
+  "en-US": { lang: "en-US", voiceNames: ["Google US English", "Microsoft Aria Online (Natural) - English (United States)", "English (United States)"] },
+  "en-GB": { lang: "en-GB", voiceNames: ["Google UK English Female", "Microsoft Sonia Online (Natural) - English (United Kingdom)", "English (United Kingdom)"] },
+  "en-NZ": { lang: "en-NZ", voiceNames: ["Google New Zealand", "English (New Zealand)"] },
+  "en-IN": { lang: "en-IN", voiceNames: ["Google India", "Microsoft Neerja Online (Natural) - English (India)", "English (India)"] },
+}
+
+export default function NewsFeed({ 
+  news, 
+  accent, 
+  isHistory = false, 
+  preloadAudio = false // Default to false (no preloading)
+}: NewsFeedProps) {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [preloadedAudio, setPreloadedAudio] = useState<Record<string, HTMLAudioElement>>({})
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
 
-  // Preload audio for all sentences
+  // Initialize speech synthesis and load available voices
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      // Get initial list of voices
+      const voices = window.speechSynthesis.getVoices()
+      setAvailableVoices(voices)
+
+      // Handle voices changing (happens in some browsers after page load)
+      const voicesChangedHandler = () => {
+        const updatedVoices = window.speechSynthesis.getVoices()
+        setAvailableVoices(updatedVoices)
+      }
+
+      window.speechSynthesis.addEventListener('voiceschanged', voicesChangedHandler)
+
+      return () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', voicesChangedHandler)
+      }
+    }
+  }, [])
+
+  // Find the best matching voice for the current accent
+  const getBestVoiceForAccent = (accentCode: string): SpeechSynthesisVoice | null => {
+    if (!availableVoices.length || !window.speechSynthesis) return null
+    
+    const accentConfig = ACCENT_TO_VOICE_MAP[accentCode] || ACCENT_TO_VOICE_MAP["en-US"] // default to US accent
+    
+    // Try to find a voice that matches one of the preferred voice names
+    for (const voiceName of accentConfig.voiceNames) {
+      const matchedVoice = availableVoices.find(voice => 
+        voice.name.includes(voiceName) || voice.name === voiceName
+      )
+      if (matchedVoice) return matchedVoice
+    }
+    
+    // If no match by name, try to find by language
+    const langMatch = availableVoices.find(voice => voice.lang === accentConfig.lang)
+    if (langMatch) return langMatch
+    
+    // If still no match, return any English voice or null
+    return availableVoices.find(voice => voice.lang.startsWith('en')) || null
+  }
+
+  // Play text using browser's speech synthesis
+  const playWithBrowserTTS = (text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return false
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel()
+    
+    const utterance = new SpeechSynthesisUtterance(text)
+    
+    // Set the voice based on accent
+    const voice = getBestVoiceForAccent(accent)
+    if (voice) utterance.voice = voice
+    
+    // Set language based on accent
+    const accentConfig = ACCENT_TO_VOICE_MAP[accent] || ACCENT_TO_VOICE_MAP["en-US"]
+    utterance.lang = accentConfig.lang
+    
+    // Start speaking
+    window.speechSynthesis.speak(utterance)
+    
+    return true
+  }
+
+  // Preload audio for all sentences - only if preloadAudio is true
+  useEffect(() => {
+    // Skip preloading if the feature is disabled
+    if (!preloadAudio) return;
+    
     const audioCache: Record<string, HTMLAudioElement> = {}
     const loadingState: Record<string, boolean> = {}
     
-    // Create preload function
-    const preloadAudio = (text: string, sentenceId: string) => {
+    // Create preload function - renamed to avoid conflict with the prop name
+    const preloadAudioFile = (text: string, sentenceId: string) => {
       const encodedText = encodeURIComponent(text)
       const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
       
@@ -69,7 +153,7 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
     news.forEach((item, index) => {
       item.sentences.forEach((sentence, idx) => {
         const sentenceId = `${index}-${idx}`
-        preloadAudio(sentence.english, sentenceId)
+        preloadAudioFile(sentence.english, sentenceId)
       })
     })
     
@@ -85,8 +169,13 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
         audio.onerror = null
         audio.src = ''
       })
+      
+      // Cancel any speech synthesis
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
     }
-  }, [news])
+  }, [news, preloadAudio]) // Added preloadAudio to dependencies
 
   const playSentence = (text: string, sentenceId: string) => {
     // Stop any currently playing audio
@@ -95,8 +184,21 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
       audioRef.current = null
     }
     
-    // Use preloaded audio if available
-    if (preloadedAudio[sentenceId]) {
+    // Stop any speech synthesis
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
+    
+    // Update state to show which sentence is playing
+    setPlayingAudioId(sentenceId)
+    
+    // If not preloading, set loading state for this sentence
+    if (!preloadAudio) {
+      setIsLoading(prev => ({...prev, [sentenceId]: true}))
+    }
+    
+    // Use preloaded audio if available and preloading is enabled
+    if (preloadAudio && preloadedAudio[sentenceId]) {
       const audio = preloadedAudio[sentenceId]
       
       // Reset audio to beginning if it was already played
@@ -105,11 +207,23 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
       // Set as current audio
       audioRef.current = audio
       
-      // Update state to show which sentence is playing
-      setPlayingAudioId(sentenceId)
-      
       // Play the audio
-      audio.play()
+      const playPromise = audio.play()
+      
+      // Handle play errors - fallback to browser TTS
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Audio playback failed, falling back to browser TTS:", error)
+          
+          // Try to play with browser TTS
+          const ttsFallbackSuccessful = playWithBrowserTTS(text)
+          
+          // If browser TTS also failed or isn't available, show error
+          if (!ttsFallbackSuccessful) {
+            console.error("Browser TTS fallback also failed")
+          }
+        })
+      }
       
       // Reset when done
       audio.onended = () => {
@@ -117,8 +231,7 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
         audioRef.current = null
       }
     } else {
-      // Fallback to original method if preloaded audio isn't available
-      // Create the API URL with encoded text
+      // Load audio on demand
       const encodedText = encodeURIComponent(text)
       const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
       
@@ -126,19 +239,67 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
       const audio = new Audio(audioUrl)
       audioRef.current = audio
       
-      // Update state to show which sentence is playing
-      setPlayingAudioId(sentenceId)
+      // Update loading state when audio is ready
+      if (!preloadAudio) {
+        audio.oncanplaythrough = () => {
+          setIsLoading(prev => ({...prev, [sentenceId]: false}))
+        }
+      }
       
       // Play the audio
-      audio.play()
+      const playPromise = audio.play()
+      
+      // Handle play errors - fallback to browser TTS
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Audio playback failed, falling back to browser TTS:", error)
+          setIsLoading(prev => ({...prev, [sentenceId]: false}))
+          
+          // Try to play with browser TTS
+          const ttsFallbackSuccessful = playWithBrowserTTS(text)
+          
+          // If browser TTS also failed or isn't available, show error
+          if (!ttsFallbackSuccessful) {
+            console.error("Browser TTS fallback also failed")
+          }
+        })
+      }
       
       // Reset when done
       audio.onended = () => {
         setPlayingAudioId(null)
         audioRef.current = null
+        
+        // Clean up handler
+        if (!preloadAudio) {
+          audio.oncanplaythrough = null
+        }
       }
     }
   }
+
+  // Stop all audio playback
+  const stopAllAudio = () => {
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+    
+    // Stop any speech synthesis
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
+    
+    setPlayingAudioId(null)
+  }
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      stopAllAudio()
+    }
+  }, [])
 
   if (news.length === 0) {
     return (
