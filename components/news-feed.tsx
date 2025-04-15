@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Play, ExternalLink } from "lucide-react"
@@ -29,6 +29,64 @@ interface NewsFeedProps {
 export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedProps) {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [preloadedAudio, setPreloadedAudio] = useState<Record<string, HTMLAudioElement>>({})
+  const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
+
+  // Preload audio for all sentences
+  useEffect(() => {
+    const audioCache: Record<string, HTMLAudioElement> = {}
+    const loadingState: Record<string, boolean> = {}
+    
+    // Create preload function
+    const preloadAudio = (text: string, sentenceId: string) => {
+      const encodedText = encodeURIComponent(text)
+      const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
+      
+      const audio = new Audio()
+      audio.src = audioUrl
+      
+      // Mark as loading
+      loadingState[sentenceId] = true
+      
+      // When the audio is loaded, update the loading state
+      audio.oncanplaythrough = () => {
+        loadingState[sentenceId] = false
+        setIsLoading({...loadingState})
+      }
+      
+      // Catch any loading errors
+      audio.onerror = () => {
+        console.error(`Failed to preload audio for: ${text}`)
+        loadingState[sentenceId] = false
+        setIsLoading({...loadingState})
+      }
+      
+      // Add to cache
+      audioCache[sentenceId] = audio
+    }
+    
+    // Start preloading all sentences
+    news.forEach((item, index) => {
+      item.sentences.forEach((sentence, idx) => {
+        const sentenceId = `${index}-${idx}`
+        preloadAudio(sentence.english, sentenceId)
+      })
+    })
+    
+    // Update state with all preloaded audios and loading status
+    setPreloadedAudio(audioCache)
+    setIsLoading(loadingState)
+    
+    // Cleanup function
+    return () => {
+      // Abort all audio loading on unmount
+      Object.values(audioCache).forEach(audio => {
+        audio.oncanplaythrough = null
+        audio.onerror = null
+        audio.src = ''
+      })
+    }
+  }, [news])
 
   const playSentence = (text: string, sentenceId: string) => {
     // Stop any currently playing audio
@@ -36,25 +94,49 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
       audioRef.current.pause()
       audioRef.current = null
     }
-
-    // Create the API URL with encoded text
-    const encodedText = encodeURIComponent(text)
-    const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
     
-    // Create and play the audio
-    const audio = new Audio(audioUrl)
-    audioRef.current = audio
-    
-    // Update state to show which sentence is playing
-    setPlayingAudioId(sentenceId)
-    
-    // Play the audio
-    audio.play()
-    
-    // Reset when done
-    audio.onended = () => {
-      setPlayingAudioId(null)
-      audioRef.current = null
+    // Use preloaded audio if available
+    if (preloadedAudio[sentenceId]) {
+      const audio = preloadedAudio[sentenceId]
+      
+      // Reset audio to beginning if it was already played
+      audio.currentTime = 0
+      
+      // Set as current audio
+      audioRef.current = audio
+      
+      // Update state to show which sentence is playing
+      setPlayingAudioId(sentenceId)
+      
+      // Play the audio
+      audio.play()
+      
+      // Reset when done
+      audio.onended = () => {
+        setPlayingAudioId(null)
+        audioRef.current = null
+      }
+    } else {
+      // Fallback to original method if preloaded audio isn't available
+      // Create the API URL with encoded text
+      const encodedText = encodeURIComponent(text)
+      const audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
+      
+      // Create and play the audio
+      const audio = new Audio(audioUrl)
+      audioRef.current = audio
+      
+      // Update state to show which sentence is playing
+      setPlayingAudioId(sentenceId)
+      
+      // Play the audio
+      audio.play()
+      
+      // Reset when done
+      audio.onended = () => {
+        setPlayingAudioId(null)
+        audioRef.current = null
+      }
     }
   }
 
@@ -108,8 +190,15 @@ export default function NewsFeed({ news, accent, isHistory = false }: NewsFeedPr
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-8 w-8 p-0 mr-2 rounded-full ${playingAudioId === `${index}-${idx}` ? 'bg-primary text-primary-foreground' : ''}`}
+                      className={`h-8 w-8 p-0 mr-2 rounded-full ${
+                        playingAudioId === `${index}-${idx}` 
+                          ? 'bg-primary text-primary-foreground' 
+                          : isLoading[`${index}-${idx}`] 
+                            ? 'opacity-50 cursor-wait' 
+                            : ''
+                      }`}
                       onClick={() => playSentence(sentence.english, `${index}-${idx}`)}
+                      disabled={isLoading[`${index}-${idx}`]}
                     >
                       <Play className="h-4 w-4" />
                       <span className="sr-only">Play</span>
