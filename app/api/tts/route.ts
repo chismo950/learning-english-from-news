@@ -19,7 +19,8 @@ const getCachedAudio = unstable_cache(
     
     // Fetch from the external API
     const encodedText = encodeURIComponent(text);
-    const externalUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=${speakerId}&text=${encodedText}`;
+    const externalUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p364&text=${encodedText}`;
+    console.log('External URL:', externalUrl);
     
     const response = await fetch(externalUrl);
     
@@ -42,49 +43,31 @@ const getCachedAudio = unstable_cache(
   { revalidate: CACHE_DURATION }
 );
 
-export async function GET(request: NextRequest) {
-  // Get the text and speaker_id params from the URL
-  const { searchParams } = new URL(request.url);
-  const text = searchParams.get('text');
-  const speakerId = searchParams.get('speaker_id') || 'p364'; // Default to p364 if not provided
-  const format = searchParams.get('format') || 'audio'; // 'audio' or 'base64'
-  
-  if (!text) {
-    return NextResponse.json(
-      { error: 'Missing required parameter: text' },
-      { status: 400 }
-    );
-  }
-  
+// Only accept POST requests for TTS
+export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
+    const text = body.text;
+    const speakerId = body.speaker_id || 'p364'; // Default to p364 if not provided
+    if (!text) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: text' },
+        { status: 400 }
+      );
+    }
     // Create cache key
     const cacheKey = createCacheKey(text, speakerId);
-    
-    // Get cached or fetch new audio
+    // Get cached or fetch new audio (still base64 in cache)
     const { base64Audio, contentType } = await getCachedAudio(cacheKey, text, speakerId);
-    
-    // Return based on requested format
-    if (format === 'base64') {
-      // Return base64 string directly (useful for client-side audio playback)
-      return NextResponse.json({
-        audio: base64Audio,
-        contentType
-      }, {
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-      });
-    } else {
-      // Convert back to buffer and return as audio file
-      const buffer = Buffer.from(base64Audio, 'base64');
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': contentType,
-          'Cache-Control': 'no-cache',
-          'Accept-Ranges': 'none', // 禁止分片请求，防止 content-range 自动添加
-        },
-      });
-    }
+    // Convert back to buffer and return as audio file
+    const buffer = Buffer.from(base64Audio, 'base64');
+    return new NextResponse(buffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'no-cache',
+        'Accept-Ranges': 'none', // 禁止分片请求，防止 content-range 自动添加
+      },
+    });
   } catch (error) {
     console.error('Error generating TTS:', error);
     return NextResponse.json(

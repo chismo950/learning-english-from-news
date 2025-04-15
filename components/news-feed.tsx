@@ -126,9 +126,6 @@ export default function NewsFeed({
     const preloadAudioFile = (text: string, sentenceId: string) => {
       const encodedText = encodeURIComponent(text)
       let audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
-      if (isIOSorIPad()) {
-        audioUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p364&text=${encodedText}`;
-      }
       
       const audio = new Audio()
       audio.src = audioUrl
@@ -181,106 +178,55 @@ export default function NewsFeed({
     }
   }, [news, preloadAudio]) // Added preloadAudio to dependencies
 
-  const playSentence = (text: string, sentenceId: string) => {
+  const playSentence = async (text: string, sentenceId: string) => {
     // Stop any currently playing audio
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current = null
     }
-    
     // Stop any speech synthesis
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
-    
-    // Update state to show which sentence is playing
     setPlayingAudioId(sentenceId)
-    
-    // If not preloading, set loading state for this sentence
     if (!preloadAudio) {
-      setIsLoading(prev => ({...prev, [sentenceId]: true}))
+      setIsLoading(prev => ({ ...prev, [sentenceId]: true }))
     }
-    
-    // Use preloaded audio if available and preloading is enabled
-    if (preloadAudio && preloadedAudio[sentenceId]) {
-      const audio = preloadedAudio[sentenceId]
-      
-      // Reset audio to beginning if it was already played
-      audio.currentTime = 0
-      
-      // Set as current audio
-      audioRef.current = audio
-      
-      // Play the audio
-      const playPromise = audio.play()
-      
-      // Handle play errors - fallback to browser TTS
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Audio playback failed, falling back to browser TTS:", error)
-          
-          // Try to play with browser TTS
-          const ttsFallbackSuccessful = playWithBrowserTTS(text)
-          
-          // If browser TTS also failed or isn't available, show error
-          if (!ttsFallbackSuccessful) {
-            console.error("Browser TTS fallback also failed")
-          }
-        })
-      }
-      
-      // Reset when done
-      audio.onended = () => {
-        setPlayingAudioId(null)
-        audioRef.current = null
-      }
-    } else {
-      // Load audio on demand
-      const encodedText = encodeURIComponent(text)
-      let audioUrl = `/api/tts?text=${encodedText}&speaker_id=p364`
-      if (isIOSorIPad()) {
-        audioUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p364&text=${encodedText}`;
-      }
-      
-      // Create and play the audio
+    try {
+      // POST 请求 TTS API，获取音频 blob
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, speaker_id: accent || 'p364' })
+      })
+      if (!res.ok) throw new Error('TTS API error')
+      const blob = await res.blob()
+      const audioUrl = URL.createObjectURL(blob)
       const audio = new Audio(audioUrl)
       audioRef.current = audio
-      
-      // Update loading state when audio is ready
-      if (!preloadAudio) {
-        audio.oncanplaythrough = () => {
-          setIsLoading(prev => ({...prev, [sentenceId]: false}))
-        }
+      audio.oncanplaythrough = () => {
+        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
       }
-      
-      // Play the audio
-      const playPromise = audio.play()
-      
-      // Handle play errors - fallback to browser TTS
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Audio playback failed, falling back to browser TTS:", error)
-          setIsLoading(prev => ({...prev, [sentenceId]: false}))
-          
-          // Try to play with browser TTS
-          const ttsFallbackSuccessful = playWithBrowserTTS(text)
-          
-          // If browser TTS also failed or isn't available, show error
-          if (!ttsFallbackSuccessful) {
-            console.error("Browser TTS fallback also failed")
-          }
-        })
-      }
-      
-      // Reset when done
       audio.onended = () => {
         setPlayingAudioId(null)
         audioRef.current = null
-        
-        // Clean up handler
-        if (!preloadAudio) {
-          audio.oncanplaythrough = null
+        URL.revokeObjectURL(audioUrl)
+      }
+      audio.onerror = () => {
+        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+        // 尝试浏览器TTS兜底
+        const ttsFallbackSuccessful = playWithBrowserTTS(text)
+        if (!ttsFallbackSuccessful) {
+          console.error('Browser TTS fallback also failed')
         }
+      }
+      await audio.play()
+    } catch (err) {
+      setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+      // 尝试浏览器TTS兜底
+      const ttsFallbackSuccessful = playWithBrowserTTS(text)
+      if (!ttsFallbackSuccessful) {
+        console.error('Browser TTS fallback also failed')
       }
     }
   }
