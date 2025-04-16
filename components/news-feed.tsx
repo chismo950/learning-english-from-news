@@ -11,6 +11,20 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem 
 } from "@/components/ui/select"
 
+// Add language code to name mapping (should match language-selector.tsx)
+const LANGUAGE_CODE_TO_NAME: Record<string, string> = {
+  "mi": "Te Reo Māori",
+  "zh-TW": "繁體中文",
+  "zh-CN": "简体中文",
+  "si": "සිංහල",
+  "de": "Deutsch",
+  "ja": "日本語",
+  "ko": "한국어",
+  "fr": "Français",
+  "es": "Español",
+  "pt": "Português",
+}
+
 interface NewsItem {
   title: string
   titleTranslated: string
@@ -28,6 +42,7 @@ interface NewsFeedProps {
   news: NewsItem[]
   accent: string
   isHistory?: boolean
+  nativeLanguage?: string // add this prop
 }
 
 const ACCENT_TO_VOICE_MAP: Record<string, { lang: string, voiceNames: string[] }> = {
@@ -40,7 +55,8 @@ const ACCENT_TO_VOICE_MAP: Record<string, { lang: string, voiceNames: string[] }
 export default function NewsFeed({ 
   news, 
   accent, 
-  isHistory = false 
+  isHistory = false,
+  nativeLanguage = "zh-CN", // default fallback
 }: NewsFeedProps) {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -223,6 +239,9 @@ export default function NewsFeed({
     return 0
   })
 
+  // Get translation label based on nativeLanguage
+  const translationLabel = LANGUAGE_CODE_TO_NAME[nativeLanguage] || "Translation"
+
   return (
     <div className="space-y-6">
       {/* audio speed selection */}
@@ -351,7 +370,7 @@ export default function NewsFeed({
                           ) : (
                             <ChevronRight className="w-4 h-4" />
                           )}
-                          <span>Translation</span>
+                          <span>{translationLabel}</span>
                         </button>
                         {openTranslation[sentenceKey] && (
                           <div className="pt-1">
