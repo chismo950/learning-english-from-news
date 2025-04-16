@@ -36,7 +36,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [nativeLanguage, setNativeLanguage] = useState("")
   const [selectedRegions, setSelectedRegions] = useState<string[]>([])
-  const [accent, setAccent] = useState("en-US")
+  const [accent, setAccent] = useState("en-NZ")
   const [newsData, setNewsData] = useState<NewsItem[]>([])
   const [history, setHistory] = useState<NewsHistory>({})
   const [currentTab, setCurrentTab] = useState("today")
@@ -282,7 +282,7 @@ export default function Home() {
             <div className="space-y-6">
               <LanguageSelector value={nativeLanguage} onChange={setNativeLanguage} />
               <RegionSelector value={selectedRegions} onChange={setSelectedRegions} />
-              <AccentSelector value={accent} onChange={setAccent} />
+              {/* <AccentSelector value={accent} onChange={setAccent} /> */}
 
               <div className="flex justify-end">
                 <Button onClick={savePreferences}>Save & Continue</Button>
