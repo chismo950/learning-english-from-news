@@ -295,16 +295,19 @@ export default function Home() {
           <>
             <div className="mb-4">
               <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="today">Today</TabsTrigger>
-                  {getHistoryDates()
-                    .filter((date) => date !== getTodayString())
-                    .map((date) => (
-                      <TabsTrigger key={date} value={date}>
-                        {new Date(date).toLocaleDateString()}
-                      </TabsTrigger>
-                    ))}
-                </TabsList>
+                {/* Make TabsList horizontally scrollable on overflow */}
+                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted-foreground/30 -mx-2 px-2">
+                  <TabsList className="mb-4 flex-nowrap min-w-max" style={{ display: 'flex' }}>
+                    <TabsTrigger value="today" className="whitespace-nowrap flex-shrink-0">Today</TabsTrigger>
+                    {getHistoryDates()
+                      .filter((date) => date !== getTodayString())
+                      .map((date) => (
+                        <TabsTrigger key={date} value={date} className="whitespace-nowrap flex-shrink-0">
+                          {new Date(date).toLocaleDateString()}
+                        </TabsTrigger>
+                      ))}
+                  </TabsList>
+                </div>
 
                 <TabsContent value="today">
                   {loading ? (
