@@ -43,6 +43,7 @@ export default function NewsFeed({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
+  const audioCache = useRef<Record<string, string>>({}) // sentenceId -> audioUrl
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -108,6 +109,30 @@ export default function NewsFeed({
     }
     setPlayingAudioId(sentenceId)
     setIsLoading(prev => ({ ...prev, [sentenceId]: true }))
+
+    // 检查缓存
+    const cachedUrl = audioCache.current[sentenceId]
+    if (cachedUrl) {
+      const audio = new Audio(cachedUrl)
+      audioRef.current = audio
+      audio.oncanplaythrough = () => {
+        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+      }
+      audio.onended = () => {
+        setPlayingAudioId(null)
+        audioRef.current = null
+      }
+      audio.onerror = () => {
+        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+        const ttsFallbackSuccessful = playWithBrowserTTS(text)
+        if (!ttsFallbackSuccessful) {
+          console.error('Browser TTS fallback also failed')
+        }
+      }
+      await audio.play()
+      return
+    }
+
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -117,6 +142,7 @@ export default function NewsFeed({
       if (!res.ok) throw new Error('TTS API error')
       const blob = await res.blob()
       const audioUrl = URL.createObjectURL(blob)
+      audioCache.current[sentenceId] = audioUrl // 缓存
       const audio = new Audio(audioUrl)
       audioRef.current = audio
       audio.oncanplaythrough = () => {
@@ -125,7 +151,7 @@ export default function NewsFeed({
       audio.onended = () => {
         setPlayingAudioId(null)
         audioRef.current = null
-        URL.revokeObjectURL(audioUrl)
+        // 不 revokeObjectURL，这样缓存可用，统一在卸载时释放
       }
       audio.onerror = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
@@ -160,6 +186,11 @@ export default function NewsFeed({
   useEffect(() => {
     return () => {
       stopAllAudio()
+      // 释放所有缓存的 audioUrl
+      Object.values(audioCache.current).forEach(url => {
+        URL.revokeObjectURL(url)
+      })
+      audioCache.current = {}
     }
   }, [])
 
