@@ -12,7 +12,7 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Function to fetch news that will be cached
-async function fetchNewsForRegions(language: string, regions: string[], yesterdayStr: string) {
+async function fetchNewsForRegions(language: string, regions: string[], todayStr: string) {
   // Parse API keys from environment variable
   let apiKeys: string[] = []
   try {
@@ -33,7 +33,7 @@ async function fetchNewsForRegions(language: string, regions: string[], yesterda
 
   for (const region of regions) {
     const prompt = `
-Find 5 news articles from ${region === "international" ? "international news" : region} published on ${yesterdayStr} (yesterday).
+Find the 5 latest news articles from ${region === "international" ? "international news" : region}.
 
 For each article:
 1. Break down the article into 3-5 key sentences.
@@ -66,7 +66,6 @@ Format your response as a JSON array with this structure:
   }
 ]
 
-Make sure all articles are from ${yesterdayStr} (yesterday).
 Return ONLY the JSON with no additional text, no markdown formatting, and no code blocks.
 `
 
@@ -135,14 +134,14 @@ Return ONLY the JSON with no additional text, no markdown formatting, and no cod
 }
 
 // Create a function that returns a cached version of fetchNewsForRegions with specific parameters
-function getCachedNews(language: string, regions: string[], yesterdayStr: string) {
+function getCachedNews(language: string, regions: string[], todayStr: string) {
   // Sort regions alphabetically before joining
-  const cacheKey = ['news-api-cache', language, regions.sort().join(','), yesterdayStr];
+  const cacheKey = ['news-api-cache', language, regions.sort().join(','), todayStr];
   
   // Create a cached function with these specific parameters
   const cachedFetch = unstable_cache(
     async () => {
-      return await fetchNewsForRegions(language, regions, yesterdayStr);
+      return await fetchNewsForRegions(language, regions, todayStr);
     },
     cacheKey,
     {
@@ -165,14 +164,13 @@ export async function POST(request: Request) {
       return Response.json({ error: "Language and regions are required" }, { status: 400 })
     }
 
-    // Get yesterday's date
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = yesterday.toISOString().split("T")[0]
+    // Get today's date
+    const today = new Date()
+    const todayStr = today.toISOString().split("T")[0]
 
     try {
       // Use the cached function
-      const allNews = await getCachedNews(language, regions, yesterdayStr)
+      const allNews = await getCachedNews(language, regions, todayStr)
       return Response.json({ news: allNews })
     } catch (error) {
       console.error("Error processing request:", error)
