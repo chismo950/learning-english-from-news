@@ -263,7 +263,7 @@ export default function NewsFeed({
             </div>
           </CardContent>
           <CardFooter className="bg-muted/30 text-sm text-muted-foreground">
-            Published: {new Date(item.publishedDate).toLocaleString()}
+            Published: {new Date(item.publishedDate).toLocaleDateString()}
           </CardFooter>
         </Card>
       ))}
