@@ -371,7 +371,7 @@ export default function NewsFeed({
                             <span>English</span>
                           </button>
                           {openEnglish[sentenceKey] && (
-                            <div className="pl-6 pt-1">
+                            <div className="pt-1">
                               <p className="text-base">{sentence.english}</p>
                             </div>
                           )}
