@@ -63,10 +63,26 @@ export default function NewsFeed({
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
   const audioCache = useRef<Record<string, string>>({}) // sentenceId -> audioUrl
-  const [audioSpeed, setAudioSpeed] = useState(1) // 新增音频速度状态
-  const [studyMode, setStudyMode] = useState<"listening" | "easy">("easy")
   const [openEnglish, setOpenEnglish] = useState<Record<string, boolean>>({})
   const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
+
+  // --- 新增: 从 localStorage 读取初始值 ---
+  const getInitialAudioSpeed = () => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("audioSpeed")
+      if (stored && !isNaN(Number(stored))) return Number(stored)
+    }
+    return 1
+  }
+  const getInitialStudyMode = () => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("studyMode")
+      if (stored === "listening" || stored === "easy") return stored
+    }
+    return "easy"
+  }
+  const [audioSpeed, setAudioSpeed] = useState(getInitialAudioSpeed) // 新增音频速度状态
+  const [studyMode, setStudyMode] = useState<"listening" | "easy">(getInitialStudyMode)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -85,6 +101,18 @@ export default function NewsFeed({
       }
     }
   }, [])
+
+  // --- 新增: audioSpeed/studyMode 写入 localStorage ---
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("audioSpeed", audioSpeed.toString())
+    }
+  }, [audioSpeed])
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("studyMode", studyMode)
+    }
+  }, [studyMode])
 
   const getBestVoiceForAccent = (accentCode: string): SpeechSynthesisVoice | null => {
     if (!availableVoices.length || !window.speechSynthesis) return null
