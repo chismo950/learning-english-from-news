@@ -296,8 +296,14 @@ export default function Home() {
             <div className="mb-4">
               <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
                 {/* Make TabsList horizontally scrollable on overflow */}
-                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted-foreground/30 -mx-2 px-2">
-                  <TabsList className="mb-4 flex-nowrap min-w-max" style={{ display: 'flex' }}>
+                <div className="overflow-x-auto max-w-full scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted-foreground/30 -mx-2 px-2">
+                  <TabsList
+                    className="mb-4 flex-nowrap w-max"
+                    style={{
+                      display: 'flex',
+                      width: 'max-content',
+                    }}
+                  >
                     <TabsTrigger value="today" className="whitespace-nowrap flex-shrink-0">Today</TabsTrigger>
                     {getHistoryDates()
                       .filter((date) => date !== getTodayString())
