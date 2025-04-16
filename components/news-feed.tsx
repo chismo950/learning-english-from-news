@@ -10,20 +10,7 @@ import { isIOSorIPad } from "@/lib/utils"
 import { 
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem 
 } from "@/components/ui/select"
-
-// Add language code to name mapping (should match language-selector.tsx)
-const LANGUAGE_CODE_TO_NAME: Record<string, string> = {
-  "mi": "Te Reo Māori",
-  "zh-TW": "繁體中文",
-  "zh-CN": "简体中文",
-  "si": "සිංහල",
-  "de": "Deutsch",
-  "ja": "日本語",
-  "ko": "한국어",
-  "fr": "Français",
-  "es": "Español",
-  "pt": "Português",
-}
+import { languages } from "@/components/language-selector"
 
 interface NewsItem {
   title: string
@@ -268,7 +255,7 @@ export default function NewsFeed({
   })
 
   // Get translation label based on nativeLanguage
-  const translationLabel = LANGUAGE_CODE_TO_NAME[nativeLanguage] || "Translation"
+  const translationLabel = languages.find(l => l.code === nativeLanguage)?.name || "Translation"
 
   return (
     <div className="space-y-6">

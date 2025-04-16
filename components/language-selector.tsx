@@ -3,7 +3,7 @@
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
-const languages = [
+export const languages = [
   { code: "mi", name: "Te Reo Māori", flag: "🇳🇿" },
   { code: "zh-TW", name: "繁體中文", flag: "🇲🇴" },
   { code: "zh-CN", name: "简体中文", flag: "🇨🇳" },
