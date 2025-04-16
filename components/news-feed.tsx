@@ -7,6 +7,9 @@ import { Play, ExternalLink } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { isIOSorIPad } from "@/lib/utils"
+import { 
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem 
+} from "@/components/ui/select"
 
 interface NewsItem {
   title: string
@@ -44,6 +47,7 @@ export default function NewsFeed({
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
   const audioCache = useRef<Record<string, string>>({}) // sentenceId -> audioUrl
+  const [audioSpeed, setAudioSpeed] = useState(1) // 新增音频速度状态
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -93,7 +97,9 @@ export default function NewsFeed({
     
     const accentConfig = ACCENT_TO_VOICE_MAP[accent] || ACCENT_TO_VOICE_MAP["en-US"]
     utterance.lang = accentConfig.lang
-    
+
+    utterance.rate = audioSpeed // 应用音频速度
+
     window.speechSynthesis.speak(utterance)
     
     return true
@@ -115,6 +121,7 @@ export default function NewsFeed({
     if (cachedUrl) {
       const audio = new Audio(cachedUrl)
       audioRef.current = audio
+      audio.playbackRate = audioSpeed // 应用音频速度
       audio.oncanplaythrough = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
       }
@@ -145,6 +152,7 @@ export default function NewsFeed({
       audioCache.current[sentenceId] = audioUrl // 缓存
       const audio = new Audio(audioUrl)
       audioRef.current = audio
+      audio.playbackRate = audioSpeed // 应用音频速度
       audio.oncanplaythrough = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
       }
@@ -214,6 +222,26 @@ export default function NewsFeed({
 
   return (
     <div className="space-y-6">
+      {/* audio speed selection */}
+      <div className="flex items-center gap-2 mb-2">
+        <label htmlFor="audio-speed" className="text-sm text-muted-foreground">Speed:</label>
+        <Select
+          value={audioSpeed.toString()}
+          onValueChange={val => setAudioSpeed(Number(val))}
+        >
+          <SelectTrigger id="audio-speed" className="w-24 h-8 px-2 py-1 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0.7">0.7x</SelectItem>
+            <SelectItem value="0.85">0.85x</SelectItem>
+            <SelectItem value="1">1x</SelectItem>
+            <SelectItem value="1.15">1.15x</SelectItem>
+            <SelectItem value="1.3">1.3x</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {/* play all audios one by one button */}
       {sortedNews.map((item, index) => (
         <Card key={index} className="overflow-hidden">
           <CardHeader className="bg-muted/50">
