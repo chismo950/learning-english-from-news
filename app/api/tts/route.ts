@@ -19,7 +19,8 @@ const getCachedAudio = unstable_cache(
     
     // Fetch from the external API
     const encodedText = encodeURIComponent(text);
-    const externalUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p364&text=${encodedText}`;
+    // const externalUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p364&text=${encodedText}`;
+    const externalUrl = `http://159.138.55.87:5003/api/tts?text=${encodedText}`;
     console.log('External URL:', externalUrl);
     
     const response = await fetch(externalUrl);
