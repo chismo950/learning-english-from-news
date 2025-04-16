@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, ExternalLink } from "lucide-react"
+import { Play, ExternalLink, ChevronDown, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { isIOSorIPad } from "@/lib/utils"
@@ -48,6 +48,9 @@ export default function NewsFeed({
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
   const audioCache = useRef<Record<string, string>>({}) // sentenceId -> audioUrl
   const [audioSpeed, setAudioSpeed] = useState(1) // 新增音频速度状态
+  const [studyMode, setStudyMode] = useState<"listening" | "easy">("easy")
+  const [openEnglish, setOpenEnglish] = useState<Record<string, boolean>>({})
+  const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -223,25 +226,42 @@ export default function NewsFeed({
   return (
     <div className="space-y-6">
       {/* audio speed selection */}
-      <div className="flex items-center gap-2 mb-2">
-        <label htmlFor="audio-speed" className="text-sm text-muted-foreground">Speed:</label>
-        <Select
-          value={audioSpeed.toString()}
-          onValueChange={val => setAudioSpeed(Number(val))}
-        >
-          <SelectTrigger id="audio-speed" className="w-24 h-8 px-2 py-1 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0.7">0.7x</SelectItem>
-            <SelectItem value="0.85">0.85x</SelectItem>
-            <SelectItem value="1">1x</SelectItem>
-            <SelectItem value="1.15">1.15x</SelectItem>
-            <SelectItem value="1.3">1.3x</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex items-center gap-4 mb-2">
+        <div className="flex items-center gap-2">
+          <label htmlFor="audio-speed" className="text-sm text-muted-foreground">Speed:</label>
+          <Select
+            value={audioSpeed.toString()}
+            onValueChange={val => setAudioSpeed(Number(val))}
+          >
+            <SelectTrigger id="audio-speed" className="w-24 h-8 px-2 py-1 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0.7">0.7x</SelectItem>
+              <SelectItem value="0.85">0.85x</SelectItem>
+              <SelectItem value="1">1x</SelectItem>
+              <SelectItem value="1.15">1.15x</SelectItem>
+              <SelectItem value="1.3">1.3x</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {/* study mode selector */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="study-mode" className="text-sm text-muted-foreground">Mode:</label>
+          <Select
+            value={studyMode}
+            onValueChange={val => setStudyMode(val as "listening" | "easy")}
+          >
+            <SelectTrigger id="study-mode" className="w-28 h-8 px-2 py-1 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="listening">Listening Mode</SelectItem>
+              <SelectItem value="easy">Easy Mode</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      {/* play all audios one by one button */}
       {sortedNews.map((item, index) => (
         <Card key={index} className="overflow-hidden">
           <CardHeader className="bg-muted/50">
@@ -263,31 +283,90 @@ export default function NewsFeed({
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
-              {item.sentences.map((sentence, idx) => (
-                <div key={idx} className="space-y-2">
-                  <div className="flex items-start">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-8 w-8 p-0 mr-2 rounded-full ${
-                        playingAudioId === `${index}-${idx}` 
-                          ? 'bg-primary text-primary-foreground' 
-                          : isLoading[`${index}-${idx}`] 
-                            ? 'opacity-50 cursor-wait' 
-                            : ''
-                      }`}
-                      onClick={() => playSentence(sentence.english, `${index}-${idx}`)}
-                      disabled={isLoading[`${index}-${idx}`]}
-                    >
-                      <Play className="h-4 w-4" />
-                      <span className="sr-only">Play</span>
-                    </Button>
-                    <p className="text-base">{sentence.english}</p>
+              {item.sentences.map((sentence, idx) => {
+                const sentenceKey = `${index}-${idx}`
+                return (
+                  <div key={idx} className="space-y-2">
+                    <div className="flex items-start">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 w-8 p-0 mr-2 rounded-full ${
+                          playingAudioId === sentenceKey
+                            ? 'bg-primary text-primary-foreground'
+                            : isLoading[sentenceKey]
+                              ? 'opacity-50 cursor-wait'
+                              : ''
+                        }`}
+                        onClick={() => playSentence(sentence.english, sentenceKey)}
+                        disabled={isLoading[sentenceKey]}
+                      >
+                        <Play className="h-4 w-4" />
+                        <span className="sr-only">Play</span>
+                      </Button>
+                      {/* Listening Mode collapsible English */}
+                      {studyMode === "listening" ? (
+                        <div className="flex-1">
+                          <button
+                            className="flex items-center gap-1 text-base font-medium focus:outline-none"
+                            onClick={() =>
+                              setOpenEnglish(prev => ({
+                                ...prev,
+                                [sentenceKey]: !prev[sentenceKey]
+                              }))
+                            }
+                          >
+                            {openEnglish[sentenceKey] ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                            <span>English</span>
+                          </button>
+                          {openEnglish[sentenceKey] && (
+                            <div className="pl-6 pt-1">
+                              <p className="text-base">{sentence.english}</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        // Easy Mode: show English directly
+                        <p className="text-base">{sentence.english}</p>
+                      )}
+                    </div>
+                    {/* Listening Mode collapsible translation */}
+                    {studyMode === "listening" ? (
+                      <div className="pl-10">
+                        <button
+                          className="flex items-center gap-1 text-base text-muted-foreground focus:outline-none"
+                          onClick={() =>
+                            setOpenTranslation(prev => ({
+                              ...prev,
+                              [sentenceKey]: !prev[sentenceKey]
+                            }))
+                          }
+                        >
+                          {openTranslation[sentenceKey] ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                          <span>Translation</span>
+                        </button>
+                        {openTranslation[sentenceKey] && (
+                          <div className="pt-1">
+                            <p className="text-base text-muted-foreground">{sentence.translated}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      // Easy Mode: show translation directly
+                      <p className="text-base text-muted-foreground pl-10">{sentence.translated}</p>
+                    )}
+                    {idx < item.sentences.length - 1 && <Separator className="my-2" />}
                   </div>
-                  <p className="text-base text-muted-foreground pl-10">{sentence.translated}</p>
-                  {idx < item.sentences.length - 1 && <Separator className="my-2" />}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
           <CardFooter className="bg-muted/30 text-sm text-muted-foreground">
