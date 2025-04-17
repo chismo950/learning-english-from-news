@@ -44,6 +44,7 @@ export default function Home() {
   const [hasTodayData, setHasTodayData] = useState(false)
   const [isSticky, setIsSticky] = useState(false)
   const [isBannerHidden, setIsBannerHidden] = useState(false)
+  const [showBanner, setShowBanner] = useState(false)
   const bannerRef = useRef<HTMLDivElement>(null)
 
   // Get today's date in YYYY-MM-DD format
@@ -97,6 +98,12 @@ export default function Home() {
       setShowPreferences(false)
     } else {
       setShowPreferences(true)
+    }
+
+    // Only show banner if user agent does NOT contain '_App'
+    if (typeof window !== "undefined") {
+      const ua = window.navigator.userAgent
+      setShowBanner(!ua.includes("_App"))
     }
 
     setInitialized(true)
@@ -241,7 +248,7 @@ export default function Home() {
           </div>
         </header>
 
-        {!isBannerHidden && (
+        {showBanner && !isBannerHidden && (
           <div 
             ref={bannerRef}
             className={`mb-4 p-4 border rounded-lg shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-2 transition-all duration-300 ${
