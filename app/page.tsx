@@ -57,7 +57,7 @@ export default function Home() {
     // Load preferences from localStorage
     const storedLanguage = localStorage.getItem("nativeLanguage")
     const storedRegions = localStorage.getItem("selectedRegions")
-    const storedAccent = localStorage.getItem("accent")
+    // const storedAccent = localStorage.getItem("accent")
     const storedHistory = localStorage.getItem("newsHistory")
 
     // Parse stored history
@@ -91,7 +91,7 @@ export default function Home() {
         setSelectedRegions([])
       }
     }
-    if (storedAccent) setAccent(storedAccent)
+    // if (storedAccent) setAccent(storedAccent)
 
     // If preferences exist and we don't have today's data, show preferences
     // Otherwise, hide preferences and show news
@@ -226,7 +226,7 @@ export default function Home() {
     // Save preferences
     localStorage.setItem("nativeLanguage", nativeLanguage)
     localStorage.setItem("selectedRegions", JSON.stringify(selectedRegions))
-    localStorage.setItem("accent", accent)
+    // localStorage.setItem("accent", accent)
 
     // Hide preferences panel
     setShowPreferences(false)

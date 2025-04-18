@@ -43,7 +43,7 @@ const ACCENT_TO_VOICE_MAP: Record<string, { lang: string, voiceNames: string[] }
 
 export default function NewsFeed({ 
   news, 
-  accent, 
+  accent: initialAccent, 
   isHistory = false,
   nativeLanguage = "zh-CN",
   date,
@@ -57,6 +57,19 @@ export default function NewsFeed({
   const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
   const [inputValues, setInputValues] = useState<Record<string, string>>({})
   const [inputRows, setInputRows] = useState<Record<string, number>>({})
+
+  const getInitialAccent = () => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("preferredAccent")
+      if (stored && (stored === "en-US" || stored === "en-GB" || stored === "en-IN")) {
+        return stored
+      }
+    }
+    // Default to en-US regardless of initialAccent
+    return "en-US"
+  }
+
+  const [selectedAccent, setSelectedAccent] = useState(getInitialAccent)
 
   const handleInputChange = (sentenceKey: string, value: string) => {
     setInputValues(prev => ({ ...prev, [sentenceKey]: value }))
@@ -109,6 +122,11 @@ export default function NewsFeed({
       window.localStorage.setItem("studyMode", studyMode)
     }
   }, [studyMode])
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("preferredAccent", selectedAccent)
+    }
+  }, [selectedAccent])
 
   const getBestVoiceForAccent = (accentCode: string): SpeechSynthesisVoice | null => {
     if (!availableVoices.length || !window.speechSynthesis) return null
@@ -135,10 +153,10 @@ export default function NewsFeed({
     
     const utterance = new SpeechSynthesisUtterance(text)
     
-    const voice = getBestVoiceForAccent(accent)
+    const voice = getBestVoiceForAccent(selectedAccent)
     if (voice) utterance.voice = voice
     
-    const accentConfig = ACCENT_TO_VOICE_MAP[accent] || ACCENT_TO_VOICE_MAP["en-US"]
+    const accentConfig = ACCENT_TO_VOICE_MAP[selectedAccent] || ACCENT_TO_VOICE_MAP["en-US"]
     utterance.lang = accentConfig.lang
 
     utterance.rate = audioSpeed
@@ -186,7 +204,10 @@ export default function NewsFeed({
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, speaker_id: accent || 'p364' })
+        body: JSON.stringify({ 
+          text, 
+          speaker_id: selectedAccent
+        })
       })
       if (!res.ok) throw new Error('TTS API error')
       const blob = await res.blob()
@@ -322,14 +343,14 @@ export default function NewsFeed({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-2">
-        <div className="flex items-center gap-2">
-          <label htmlFor="audio-speed" className="text-sm text-muted-foreground">Speed:</label>
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <div className="flex items-center gap-2 mb-1">
+          <label htmlFor="audio-speed" className="text-sm text-muted-foreground whitespace-nowrap">Speed:</label>
           <Select
             value={audioSpeed.toString()}
             onValueChange={val => setAudioSpeed(Number(val))}
           >
-            <SelectTrigger id="audio-speed" className="w-24 h-8 px-2 py-1 text-sm">
+            <SelectTrigger id="audio-speed" className="w-20 h-8 px-2 py-1 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -341,19 +362,35 @@ export default function NewsFeed({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="study-mode" className="text-sm text-muted-foreground">Mode:</label>
+        <div className="flex items-center gap-2 mb-1">
+          <label htmlFor="study-mode" className="text-sm text-muted-foreground whitespace-nowrap">Mode:</label>
           <Select
             value={studyMode}
             onValueChange={val => setStudyMode(val as "listening" | "easy" | "writing")}
           >
-            <SelectTrigger id="study-mode" className="w-28 h-8 px-2 py-1 text-sm">
+            <SelectTrigger id="study-mode" className="w-36 h-8 px-2 py-1 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="easy">Relaxed Mode</SelectItem>
               <SelectItem value="listening">Listening Practice</SelectItem>
               <SelectItem value="writing">Writing Practice</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2 mb-1">
+          <label htmlFor="accent-select" className="text-sm text-muted-foreground whitespace-nowrap">Accent:</label>
+          <Select
+            value={selectedAccent}
+            onValueChange={setSelectedAccent}
+          >
+            <SelectTrigger id="accent-select" className="w-24 h-8 px-2 py-1 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en-US">American English</SelectItem>
+              <SelectItem value="en-GB">British English</SelectItem>
+              <SelectItem value="en-IN">Indian English</SelectItem>
             </SelectContent>
           </Select>
         </div>
