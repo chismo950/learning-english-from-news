@@ -235,6 +235,13 @@ export default function NewsFeed({
 
   const sortNews = (arr: NewsItem[]) =>
     [...arr].sort((a, b) => {
+      // bring items with any favorite sentence to the top
+      const aHasFav = a.sentences.some(s => s.favorite)
+      const bHasFav = b.sentences.some(s => s.favorite)
+      if (aHasFav && !bHasFav) return -1
+      if (!aHasFav && bHasFav) return 1
+
+      // region-based ordering
       if (a.region === "international" && b.region !== "international") return 1
       if (a.region !== "international" && b.region === "international") return -1
       return 0
@@ -259,32 +266,31 @@ export default function NewsFeed({
     }
   }, [date])
 
-  const toggleFavorite = (nIdx: number, sIdx: number) => {
-    const updated = feedNews.map((item, i) =>
-      i === nIdx
-        ? {
-            ...item,
-            sentences: item.sentences.map((s, j) =>
-              j === sIdx
-                ? { ...s, favorite: !s.favorite }
-                : s
-            ),
-          }
-        : item
-    )
+  const toggleFavorite = (sentenceText: string) => {
+    const updated = feedNews.map(item => ({
+      ...item,
+      sentences: item.sentences.map(s =>
+        s.english === sentenceText
+          ? { ...s, favorite: !s.favorite }
+          : s
+      ),
+    }))
     setFeedNews(updated)
     if (typeof window !== "undefined") {
       const raw = window.localStorage.getItem("newsHistory")
       if (raw) {
         try {
-          const hist = JSON.parse(raw)
-          if (hist[date] && hist[date][nIdx]) {
-            hist[date][nIdx].sentences[sIdx].favorite =
-              updated[nIdx].sentences[sIdx].favorite
-            window.localStorage.setItem(
-              "newsHistory",
-              JSON.stringify(hist)
-            )
+          const hist: Record<string, NewsItem[]> = JSON.parse(raw)
+          if (hist[date]) {
+            hist[date] = hist[date].map(item => ({
+              ...item,
+              sentences: item.sentences.map(s =>
+                s.english === sentenceText
+                  ? { ...s, favorite: !s.favorite }
+                  : s
+              ),
+            }))
+            window.localStorage.setItem("newsHistory", JSON.stringify(hist))
           }
         } catch (e) {
           console.error("Error updating favorite:", e)
@@ -389,7 +395,7 @@ export default function NewsFeed({
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 rounded-full"
-                          onClick={() => toggleFavorite(index, idx)}
+                          onClick={() => toggleFavorite(sentence.english)}
                           aria-label="Toggle Favorite"
                         >
                           <Star
