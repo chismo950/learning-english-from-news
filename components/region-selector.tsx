@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 
-const regions = [
+export const regions = [
   { code: "new-zealand", name: "New Zealand", flag: "🇳🇿" },
   { code: "china", name: "China", flag: "🇨🇳" },
   { code: "sri-lanka", name: "Sri Lanka", flag: "🇱🇰" },

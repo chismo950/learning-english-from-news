@@ -10,6 +10,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem 
 } from "@/components/ui/select"
 import { languages } from "@/components/language-selector"
+import { regions } from "@/components/region-selector"
 
 interface NewsItem {
   title: string
@@ -351,16 +352,19 @@ export default function NewsFeed({
       {sortedNews.map((item, index) => (
         <Card key={index} className="overflow-hidden">
           <CardHeader className="bg-muted/50">
-            <div className="flex justify-between items-start">
-              <div>
+            <div className="flex justify-between items-center">
+              <div className="grow">
                 <Badge variant="outline" className="mb-2">
-                  {item.region}
+                  {regions.find(l => l.code === item.region)?.flag} {item.region}
                 </Badge>
+              </div>
+              <div className="mr-2 text-muted-foreground">
+                {new Date(item.publishedDate).toLocaleDateString()}
               </div>
               <Button variant="outline" size="sm" asChild>
                 <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Source
+                  <ExternalLink className="h-4 w-4" />
+                  {/* <span className="ml-1">Source</span> */}
                 </a>
               </Button>
             </div>
@@ -466,9 +470,6 @@ export default function NewsFeed({
               })}
             </div>
           </CardContent>
-          <CardFooter className="bg-muted/30 text-sm text-muted-foreground">
-            Published: {new Date(item.publishedDate).toLocaleDateString()}
-          </CardFooter>
         </Card>
       ))}
     </div>
