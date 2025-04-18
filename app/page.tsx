@@ -24,6 +24,7 @@ interface NewsItem {
   source: string
   sourceUrl: string
   publishedDate: string
+  nativeLanguage?: string
 }
 
 interface NewsHistory {
@@ -167,7 +168,16 @@ export default function Home() {
 
       // Save to history
       const today = getTodayString()
-      const updatedHistory = { ...history, [today]: data.news }
+      // Add nativeLanguage only to the first news item
+      const newsWithLanguage = [...data.news];
+      if (newsWithLanguage.length > 0) {
+        newsWithLanguage[0] = {
+          ...newsWithLanguage[0],
+          nativeLanguage
+        };
+      }
+      
+      const updatedHistory = { ...history, [today]: newsWithLanguage }
 
       // Keep only the 7 most recent days of history
       const historyDates = Object.keys(updatedHistory).sort((a, b) =>
@@ -331,7 +341,7 @@ export default function Home() {
                   ) : (
                     <>
                       {newsData.length > 0 ? (
-                        <NewsFeed news={newsData} accent={accent} nativeLanguage={nativeLanguage} />
+                        <NewsFeed news={newsData} accent={accent} nativeLanguage={newsData[0].nativeLanguage??nativeLanguage} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-lg mb-4">No news available for today.</p>
@@ -355,7 +365,7 @@ export default function Home() {
 
                 {getHistoryDates().map((date) => (
                   <TabsContent key={date} value={date}>
-                    <NewsFeed news={history[date] || []} accent={accent} isHistory nativeLanguage={nativeLanguage} />
+                    <NewsFeed news={history[date] || []} accent={accent} isHistory nativeLanguage={history[date][0].nativeLanguage??nativeLanguage} />
                   </TabsContent>
                 ))}
               </Tabs>
