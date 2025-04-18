@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
 import LanguageSelector from "@/components/language-selector"
 import RegionSelector from "@/components/region-selector"
-import AccentSelector from "@/components/accent-selector"
 import NewsFeed from "@/components/news-feed"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -341,7 +340,12 @@ export default function Home() {
                   ) : (
                     <>
                       {newsData.length > 0 ? (
-                        <NewsFeed news={newsData} accent={accent} nativeLanguage={newsData[0].nativeLanguage??nativeLanguage} />
+                        <NewsFeed
+                          news={newsData}
+                          accent={accent}
+                          nativeLanguage={newsData[0].nativeLanguage ?? nativeLanguage}
+                          date={getTodayString()}
+                        />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-lg mb-4">No news available for today.</p>
@@ -365,7 +369,13 @@ export default function Home() {
 
                 {getHistoryDates().map((date) => (
                   <TabsContent key={date} value={date}>
-                    <NewsFeed news={history[date] || []} accent={accent} isHistory nativeLanguage={history[date][0].nativeLanguage??nativeLanguage} />
+                    <NewsFeed
+                      news={history[date] || []}
+                      accent={accent}
+                      isHistory
+                      nativeLanguage={history[date][0].nativeLanguage ?? nativeLanguage}
+                      date={date}
+                    />
                   </TabsContent>
                 ))}
               </Tabs>

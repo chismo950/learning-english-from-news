@@ -3,10 +3,9 @@
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, ExternalLink, ChevronDown, ChevronRight } from "lucide-react"
+import { Play, ExternalLink, ChevronDown, ChevronRight, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { isIOSorIPad } from "@/lib/utils"
 import { 
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem 
 } from "@/components/ui/select"
@@ -19,6 +18,7 @@ interface NewsItem {
   sentences: Array<{
     english: string
     translated: string
+    favorite?: boolean
   }>
   source: string
   sourceUrl: string
@@ -29,7 +29,8 @@ interface NewsFeedProps {
   news: NewsItem[]
   accent: string
   isHistory?: boolean
-  nativeLanguage?: string // add this prop
+  nativeLanguage?: string
+  date: string
 }
 
 const ACCENT_TO_VOICE_MAP: Record<string, { lang: string, voiceNames: string[] }> = {
@@ -43,7 +44,8 @@ export default function NewsFeed({
   news, 
   accent, 
   isHistory = false,
-  nativeLanguage = "zh-CN", // default fallback
+  nativeLanguage = "zh-CN",
+  date,
 }: NewsFeedProps) {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -53,7 +55,6 @@ export default function NewsFeed({
   const [openEnglish, setOpenEnglish] = useState<Record<string, boolean>>({})
   const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
 
-  // --- 新增: 从 localStorage 读取初始值 ---
   const getInitialAudioSpeed = () => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem("audioSpeed")
@@ -68,7 +69,7 @@ export default function NewsFeed({
     }
     return "easy"
   }
-  const [audioSpeed, setAudioSpeed] = useState(getInitialAudioSpeed) // 新增音频速度状态
+  const [audioSpeed, setAudioSpeed] = useState(getInitialAudioSpeed)
   const [studyMode, setStudyMode] = useState<"listening" | "easy">(getInitialStudyMode)
 
   useEffect(() => {
@@ -89,7 +90,6 @@ export default function NewsFeed({
     }
   }, [])
 
-  // --- 新增: audioSpeed/studyMode 写入 localStorage ---
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("audioSpeed", audioSpeed.toString())
@@ -132,7 +132,7 @@ export default function NewsFeed({
     const accentConfig = ACCENT_TO_VOICE_MAP[accent] || ACCENT_TO_VOICE_MAP["en-US"]
     utterance.lang = accentConfig.lang
 
-    utterance.rate = audioSpeed // 应用音频速度
+    utterance.rate = audioSpeed
 
     window.speechSynthesis.speak(utterance)
     
@@ -150,12 +150,11 @@ export default function NewsFeed({
     setPlayingAudioId(sentenceId)
     setIsLoading(prev => ({ ...prev, [sentenceId]: true }))
 
-    // 检查缓存
     const cachedUrl = audioCache.current[sentenceId]
     if (cachedUrl) {
       const audio = new Audio(cachedUrl)
       audioRef.current = audio
-      audio.playbackRate = audioSpeed // 应用音频速度
+      audio.playbackRate = audioSpeed
       audio.oncanplaythrough = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
       }
@@ -183,17 +182,16 @@ export default function NewsFeed({
       if (!res.ok) throw new Error('TTS API error')
       const blob = await res.blob()
       const audioUrl = URL.createObjectURL(blob)
-      audioCache.current[sentenceId] = audioUrl // 缓存
+      audioCache.current[sentenceId] = audioUrl
       const audio = new Audio(audioUrl)
       audioRef.current = audio
-      audio.playbackRate = audioSpeed // 应用音频速度
+      audio.playbackRate = audioSpeed
       audio.oncanplaythrough = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
       }
       audio.onended = () => {
         setPlayingAudioId(null)
         audioRef.current = null
-        // 不 revokeObjectURL，这样缓存可用，统一在卸载时释放
       }
       audio.onerror = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
@@ -228,13 +226,74 @@ export default function NewsFeed({
   useEffect(() => {
     return () => {
       stopAllAudio()
-      // 释放所有缓存的 audioUrl
       Object.values(audioCache.current).forEach(url => {
         URL.revokeObjectURL(url)
       })
       audioCache.current = {}
     }
   }, [])
+
+  const sortNews = (arr: NewsItem[]) =>
+    [...arr].sort((a, b) => {
+      if (a.region === "international" && b.region !== "international") return 1
+      if (a.region !== "international" && b.region === "international") return -1
+      return 0
+    })
+
+  const [feedNews, setFeedNews] = useState<NewsItem[]>(() => sortNews(news))
+  useEffect(() => {
+    setFeedNews(sortNews(news))
+  }, [news])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const raw = window.localStorage.getItem("newsHistory")
+    if (!raw) return
+    try {
+      const hist: Record<string, NewsItem[]> = JSON.parse(raw)
+      if (hist[date]) {
+        setFeedNews(sortNews(hist[date]))
+      }
+    } catch (e) {
+      console.error("Failed to sync favorites on tab switch:", e)
+    }
+  }, [date])
+
+  const toggleFavorite = (nIdx: number, sIdx: number) => {
+    const updated = feedNews.map((item, i) =>
+      i === nIdx
+        ? {
+            ...item,
+            sentences: item.sentences.map((s, j) =>
+              j === sIdx
+                ? { ...s, favorite: !s.favorite }
+                : s
+            ),
+          }
+        : item
+    )
+    setFeedNews(updated)
+    if (typeof window !== "undefined") {
+      const raw = window.localStorage.getItem("newsHistory")
+      if (raw) {
+        try {
+          const hist = JSON.parse(raw)
+          if (hist[date] && hist[date][nIdx]) {
+            hist[date][nIdx].sentences[sIdx].favorite =
+              updated[nIdx].sentences[sIdx].favorite
+            window.localStorage.setItem(
+              "newsHistory",
+              JSON.stringify(hist)
+            )
+          }
+        } catch (e) {
+          console.error("Error updating favorite:", e)
+        }
+      }
+    }
+  }
+
+  const sortedNews = feedNews
 
   if (news.length === 0) {
     return (
@@ -244,22 +303,10 @@ export default function NewsFeed({
     )
   }
 
-  const sortedNews = [...news].sort((a, b) => {
-    if (a.region === "international" && b.region !== "international") {
-      return 1
-    }
-    if (a.region !== "international" && b.region === "international") {
-      return -1
-    }
-    return 0
-  })
-
-  // Get translation label based on nativeLanguage
   const translationLabel = languages.find(l => l.code === nativeLanguage)?.name || "Translation"
 
   return (
     <div className="space-y-6">
-      {/* audio speed selection */}
       <div className="flex items-center gap-4 mb-2">
         <div className="flex items-center gap-2">
           <label htmlFor="audio-speed" className="text-sm text-muted-foreground">Speed:</label>
@@ -279,7 +326,6 @@ export default function NewsFeed({
             </SelectContent>
           </Select>
         </div>
-        {/* study mode selector */}
         <div className="flex items-center gap-2">
           <label htmlFor="study-mode" className="text-sm text-muted-foreground">Mode:</label>
           <Select
@@ -338,7 +384,21 @@ export default function NewsFeed({
                         <Play className="h-4 w-4" />
                         <span className="sr-only">Play</span>
                       </Button>
-                      {/* Listening Mode collapsible English */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 mr-2 rounded-full"
+                        onClick={() => toggleFavorite(index, idx)}
+                        aria-label="Toggle Favorite"
+                      >
+                        <Star
+                          className={`h-4 w-4 ${
+                            sentence.favorite
+                              ? "text-yellow-500"
+                              : "text-muted-foreground"
+                          }`}
+                        />
+                      </Button>
                       {studyMode === "listening" ? (
                         <div className="flex-1">
                           <button
@@ -364,11 +424,9 @@ export default function NewsFeed({
                           )}
                         </div>
                       ) : (
-                        // Easy Mode: show English directly
                         <p className="text-base">{sentence.english}</p>
                       )}
                     </div>
-                    {/* Listening Mode collapsible translation */}
                     {studyMode === "listening" ? (
                       <div className="pl-10">
                         <button
@@ -394,7 +452,6 @@ export default function NewsFeed({
                         )}
                       </div>
                     ) : (
-                      // Easy Mode: show translation directly
                       <p className="text-base text-muted-foreground pl-10">{sentence.translated}</p>
                     )}
                     {idx < item.sentences.length - 1 && <Separator className="my-2" />}
