@@ -55,6 +55,14 @@ export default function NewsFeed({
   const audioCache = useRef<Record<string, string>>({}) // sentenceId -> audioUrl
   const [openEnglish, setOpenEnglish] = useState<Record<string, boolean>>({})
   const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
+  const [inputValues, setInputValues] = useState<Record<string, string>>({})
+  const [inputRows, setInputRows] = useState<Record<string, number>>({})
+
+  const handleInputChange = (sentenceKey: string, value: string) => {
+    setInputValues(prev => ({ ...prev, [sentenceKey]: value }))
+    const lines = value.split("\n").length
+    setInputRows(prev => ({ ...prev, [sentenceKey]: Math.max(1, lines) }))
+  }
 
   const getInitialAudioSpeed = () => {
     if (typeof window !== "undefined") {
@@ -66,12 +74,12 @@ export default function NewsFeed({
   const getInitialStudyMode = () => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem("studyMode")
-      if (stored === "listening" || stored === "easy") return stored
+      if (stored === "listening" || stored === "easy" || stored === "writing") return stored
     }
     return "easy"
   }
   const [audioSpeed, setAudioSpeed] = useState(getInitialAudioSpeed)
-  const [studyMode, setStudyMode] = useState<"listening" | "easy">(getInitialStudyMode)
+  const [studyMode, setStudyMode] = useState<"listening" | "easy" | "writing">(getInitialStudyMode)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -337,14 +345,15 @@ export default function NewsFeed({
           <label htmlFor="study-mode" className="text-sm text-muted-foreground">Mode:</label>
           <Select
             value={studyMode}
-            onValueChange={val => setStudyMode(val as "listening" | "easy")}
+            onValueChange={val => setStudyMode(val as "listening" | "easy" | "writing")}
           >
             <SelectTrigger id="study-mode" className="w-28 h-8 px-2 py-1 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="listening">Listening Mode</SelectItem>
-              <SelectItem value="easy">Easy Mode</SelectItem>
+              <SelectItem value="easy">Relaxed Mode</SelectItem>
+              <SelectItem value="listening">Listening Practice</SelectItem>
+              <SelectItem value="writing">Writing Practice</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -412,7 +421,24 @@ export default function NewsFeed({
                         </Button>
                       </div>
                       <div className="flex flex-col space-y-1 flex-1">
-                        {studyMode === "listening" ? (
+                        
+                        {studyMode === "writing" && (
+                          <textarea
+                            className="w-full p-2 border rounded resize-none overflow-hidden text-base"
+                            // rows still defines min‐lines; height will adjust dynamically
+                            rows={inputRows[sentenceKey] || 1}
+                            value={inputValues[sentenceKey] || ""}
+                            placeholder="Type the sentence you heard"
+                            onChange={e => handleInputChange(sentenceKey, e.target.value)}
+                            onInput={e => {
+                              const el = e.currentTarget as HTMLTextAreaElement
+                              el.style.height = "auto"
+                              el.style.height = `${el.scrollHeight}px`
+                            }}
+                          />
+                        )}
+
+                        {(studyMode === "listening" || studyMode === "writing") ? (
                           <span className="pt-1">
                             <button
                               className="flex items-center gap-1 text-base font-medium focus:outline-none"
@@ -437,7 +463,8 @@ export default function NewsFeed({
                         ) : (
                           <p className="text-base pt-1">{sentence.english}</p>
                         )}
-                        {studyMode === "listening" ? (
+
+                        {(studyMode === "listening" || studyMode === "writing") ? (
                           <span className="pt-3">
                             <button
                               className="flex items-center gap-1 text-base text-muted-foreground focus:outline-none"
