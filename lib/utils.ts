@@ -13,3 +13,10 @@ export function isIOSorIPad(): boolean {
     // iPadOS 13+ 会被识别为 Mac，但有触摸能力
     (ua.includes("Macintosh") && "ontouchend" in document)
 }
+
+export const isInAppWebview = () => {
+  if (typeof window !== "undefined") {
+    return window.navigator.userAgent.includes("_App")
+  }
+  return false
+}

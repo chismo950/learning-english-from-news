@@ -2,12 +2,34 @@
 
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { isInAppWebview } from "@/lib/utils"
+
+// Function to send theme to the app
+const sendThemeToApp = (theme: string) => {
+  if (typeof window !== "undefined" && isInAppWebview()) {
+    // Use postMessage or other method to communicate with the app
+    console.log('sendThemeToApp', theme)
+    window.postMessage?.({ type: "THEME_CHANGE", theme }, "*")
+  }
+}
 
 export function ModeToggle() {
-  const { setTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
+
+  // Effect to handle initial theme detection and send to app
+  useEffect(() => {
+    console.log('theme', theme)
+    if (isInAppWebview()) {
+      // If theme is already set, send it to the app
+      if (theme) {
+        sendThemeToApp(theme)
+      } 
+    }
+  }, [theme])
 
   return (
     <DropdownMenu>
