@@ -8,12 +8,25 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { isInAppWebview } from "@/lib/utils"
 
+// Add TypeScript declaration for ReactNativeWebView
+declare global {
+  interface Window {
+    ReactNativeWebView?: {
+      postMessage(message: string): void;
+    };
+  }
+}
+
 // Function to send theme to the app
 const sendThemeToApp = (theme: string) => {
   if (typeof window !== "undefined" && isInAppWebview()) {
     // Use postMessage or other method to communicate with the app
     console.log('sendThemeToApp', theme)
-    window.postMessage?.({ type: "THEME_CHANGE", theme }, "*")
+    if (window.ReactNativeWebView?.postMessage) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "THEME_CHANGE", theme }))
+    } else {
+      window.postMessage?.({ type: "THEME_CHANGE", theme }, "*")
+    }
   }
 }
 
