@@ -15,7 +15,10 @@ export const regions = [
   { code: "korea", name: "Korea", flag: "🇰🇷" },
   { code: "france", name: "France", flag: "🇫🇷" },
   { code: "spain", name: "Spain", flag: "🇪🇸" },
-  { code: "portugal", name: "Portugal", flag: "🇵🇹" },
+  { code: "thailand", name: "Thailand", flag: "🇹🇭" },
+  { code: "brazil", name: "Brazil", flag: "🇧🇷" },
+  { code: "mexico", name: "Mexico", flag: "🇲🇽" },
+  { code: "colombia", name: "Colombia", flag: "🇨🇴" },
   { code: "international", name: "International News", flag: "🌎" },
 ]
 

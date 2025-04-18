@@ -5,15 +5,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export const languages = [
   { code: "mi", name: "Te Reo Māori", flag: "🇳🇿" },
-  { code: "zh-TW", name: "繁體中文", flag: "🇲🇴" },
+  { code: "zh-TW", name: "繁體中文", flag: "繁" },
   { code: "zh-CN", name: "简体中文", flag: "🇨🇳" },
   { code: "si", name: "සිංහල", flag: "🇱🇰" },
   { code: "de", name: "Deutsch", flag: "🇩🇪" },
   { code: "ja", name: "日本語", flag: "🇯🇵" },
   { code: "ko", name: "한국어", flag: "🇰🇷" },
   { code: "fr", name: "Français", flag: "🇫🇷" },
-  { code: "es", name: "Español", flag: "🇪🇸" },
-  { code: "pt", name: "Português", flag: "🇵🇹" },
+  { code: "es", name: "Español", flag: "es" },
+  { code: "pt", name: "Português", flag: "pt" },
+  { code: "th", name: "ไทย", flag: "🇹🇭" },
 ]
 
 interface LanguageSelectorProps {
