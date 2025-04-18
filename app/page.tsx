@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Settings, X } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { detectAppleSiliconMac, isInAppWebview, isIOSorIPad } from "@/lib/utils"
 
 // Define interfaces for the news and history data
 interface NewsItem {
@@ -100,12 +101,16 @@ export default function Home() {
       setShowPreferences(true)
     }
 
-    // Only show banner if user agent does NOT contain '_App'
-    if (typeof window !== "undefined") {
-      const ua = window.navigator.userAgent
-      setShowBanner(!ua.includes("_App"))
-    }
-
+    (async ()=>{
+      setShowBanner(
+        !isInAppWebview()
+        && (
+          isIOSorIPad()
+          || await detectAppleSiliconMac() === true
+        )
+      )
+    })();
+    
     setInitialized(true)
   }, [])
 
@@ -250,7 +255,8 @@ export default function Home() {
     <main className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <header className="flex justify-between items-center mb-4">
-          <h1 className="text-xl md:text-2xl font-bold">Learning English from News</h1>
+          <h1 className="hidden md:block text-2xl font-bold">Learning English from the News</h1>
+          <h1 className="block md:hidden text-2xl font-bold">English News</h1>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => setShowPreferences(!showPreferences)} aria-label={showPreferences ? "Hide Preferences" : "Edit Preferences"}>
               {showPreferences ? <X className="h-4 w-4" /> : <Settings className="h-4 w-4" />}
@@ -269,8 +275,8 @@ export default function Home() {
             }`}
           >
             <div>
-              <h3 className="font-medium mb-1">📚 Enhance Your Learning</h3>
-              <p className="text-sm text-muted-foreground">Look up words, get examples, and improve your vocabulary with AI-Powered Dictionary.</p>
+              <h3 className="font-medium mb-1">📱 Download Our App</h3>
+              <p className="text-sm text-muted-foreground">Learn English from the news anytime, anywhere.</p>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
               <Button asChild variant="default" className="flex-grow md:flex-grow-0 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
