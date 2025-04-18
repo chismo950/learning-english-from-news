@@ -331,7 +331,7 @@ export default function Home() {
                   ) : (
                     <>
                       {newsData.length > 0 ? (
-                        <NewsFeed news={newsData} accent={accent} />
+                        <NewsFeed news={newsData} accent={accent} nativeLanguage={nativeLanguage} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-lg mb-4">No news available for today.</p>
@@ -355,7 +355,7 @@ export default function Home() {
 
                 {getHistoryDates().map((date) => (
                   <TabsContent key={date} value={date}>
-                    <NewsFeed news={history[date] || []} accent={accent} isHistory />
+                    <NewsFeed news={history[date] || []} accent={accent} isHistory nativeLanguage={nativeLanguage} />
                   </TabsContent>
                 ))}
               </Tabs>
