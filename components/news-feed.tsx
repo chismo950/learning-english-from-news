@@ -367,93 +367,93 @@ export default function NewsFeed({
                 const sentenceKey = `${index}-${idx}`
                 return (
                   <div key={idx} className="space-y-2">
-                    <div className="flex items-start">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`h-8 w-8 p-0 mr-2 rounded-full ${
-                          playingAudioId === sentenceKey
-                            ? 'bg-primary text-primary-foreground'
-                            : isLoading[sentenceKey]
-                              ? 'opacity-50 cursor-wait'
-                              : ''
-                        }`}
-                        onClick={() => playSentence(sentence.english, sentenceKey)}
-                        disabled={isLoading[sentenceKey]}
-                      >
-                        <Play className="h-4 w-4" />
-                        <span className="sr-only">Play</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 mr-2 rounded-full"
-                        onClick={() => toggleFavorite(index, idx)}
-                        aria-label="Toggle Favorite"
-                      >
-                        <Star
-                          className={`h-4 w-4 ${
-                            sentence.favorite
-                              ? "text-yellow-500"
-                              : "text-muted-foreground"
+                    <div className="flex">
+                      <div className="flex flex-col mr-4 space-y-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-8 w-8 p-0 rounded-full ${
+                            playingAudioId === sentenceKey
+                              ? 'bg-primary text-primary-foreground'
+                              : isLoading[sentenceKey]
+                                ? 'opacity-50 cursor-wait'
+                                : ''
                           }`}
-                        />
-                      </Button>
-                      {studyMode === "listening" ? (
-                        <div className="flex-1">
-                          <button
-                            className="flex items-center gap-1 text-base font-medium focus:outline-none"
-                            onClick={() =>
-                              setOpenEnglish(prev => ({
-                                ...prev,
-                                [sentenceKey]: !prev[sentenceKey]
-                              }))
-                            }
-                          >
-                            {openEnglish[sentenceKey] ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4" />
-                            )}
-                            <span>English</span>
-                          </button>
-                          {openEnglish[sentenceKey] && (
-                            <div className="pt-1">
-                              <p className="text-base">{sentence.english}</p>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-base">{sentence.english}</p>
-                      )}
-                    </div>
-                    {studyMode === "listening" ? (
-                      <div className="pl-10">
-                        <button
-                          className="flex items-center gap-1 text-base text-muted-foreground focus:outline-none"
-                          onClick={() =>
-                            setOpenTranslation(prev => ({
-                              ...prev,
-                              [sentenceKey]: !prev[sentenceKey]
-                            }))
-                          }
+                          onClick={() => playSentence(sentence.english, sentenceKey)}
+                          disabled={isLoading[sentenceKey]}
                         >
-                          {openTranslation[sentenceKey] ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4" />
-                          )}
-                          <span>{translationLabel}</span>
-                        </button>
-                        {openTranslation[sentenceKey] && (
-                          <div className="pt-1">
-                            <p className="text-base text-muted-foreground">{sentence.translated}</p>
-                          </div>
+                          <Play className="h-4 w-4" />
+                          <span className="sr-only">Play</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 rounded-full"
+                          onClick={() => toggleFavorite(index, idx)}
+                          aria-label="Toggle Favorite"
+                        >
+                          <Star
+                            className={`h-4 w-4 ${
+                              sentence.favorite
+                                ? "text-yellow-500"
+                                : "text-muted-foreground"
+                            }`}
+                          />
+                        </Button>
+                      </div>
+                      <div className="flex flex-col space-y-1 flex-1">
+                        {studyMode === "listening" ? (
+                          <span className="pt-1">
+                            <button
+                              className="flex items-center gap-1 text-base font-medium focus:outline-none"
+                              onClick={() =>
+                                setOpenEnglish(prev => ({
+                                  ...prev,
+                                  [sentenceKey]: !prev[sentenceKey]
+                                }))
+                              }
+                            >
+                              {openEnglish[sentenceKey] ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                              <span>English</span>
+                            </button>
+                            {openEnglish[sentenceKey] && (
+                              <p className="text-base">{sentence.english}</p>
+                            )}
+                          </span>
+                        ) : (
+                          <p className="text-base pt-1">{sentence.english}</p>
+                        )}
+                        {studyMode === "listening" ? (
+                          <span className="pt-3">
+                            <button
+                              className="flex items-center gap-1 text-base text-muted-foreground focus:outline-none"
+                              onClick={() =>
+                                setOpenTranslation(prev => ({
+                                  ...prev,
+                                  [sentenceKey]: !prev[sentenceKey]
+                                }))
+                              }
+                            >
+                              {openTranslation[sentenceKey] ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                              <span>{translationLabel}</span>
+                            </button>
+                            {openTranslation[sentenceKey] && (
+                              <p className="text-base text-muted-foreground">{sentence.translated}</p>
+                            )}
+                          </span>
+                        ) : (
+                          <p className="text-base text-muted-foreground pt-3">{sentence.translated}</p>
                         )}
                       </div>
-                    ) : (
-                      <p className="text-base text-muted-foreground pl-10">{sentence.translated}</p>
-                    )}
+                    </div>
                     {idx < item.sentences.length - 1 && <Separator className="my-2" />}
                   </div>
                 )
