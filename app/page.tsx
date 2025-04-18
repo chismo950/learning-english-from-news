@@ -135,11 +135,13 @@ export default function Home() {
     // Validate language and regions before fetching
     if (!nativeLanguage) {
       setValidationError("Please select your native language")
+      setShowPreferences(true)
       return
     }
 
     if (selectedRegions.length === 0) {
       setValidationError("Please select at least one region")
+      setShowPreferences(true)
       return
     }
 
