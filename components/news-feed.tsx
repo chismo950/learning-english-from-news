@@ -409,12 +409,13 @@ export default function NewsFeed({
                 </Badge>
               </div>
               <div className="mr-2 text-muted-foreground">
-                {new Date(item.publishedDate).toLocaleDateString()}
+                {item.publishedDate && !isNaN(new Date(item.publishedDate).getTime())
+                  ? new Date(item.publishedDate).toLocaleDateString()
+                  : date}
               </div>
               <Button variant="outline" size="sm" asChild>
                 <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
-                  {/* <span className="ml-1">Source</span> */}
                 </a>
               </Button>
             </div>
