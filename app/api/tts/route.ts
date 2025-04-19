@@ -3,9 +3,9 @@ import { unstable_cache } from 'next/cache';
 import crypto from 'crypto';
 
 // Create a hash of the text to use as cache key
-function createCacheKey(text: string, speakerId: string): string {
+function createCacheKey(text: string, accent: string): string {
   const hash = crypto.createHash('md5');
-  hash.update(`${speakerId}-${text}`);
+  hash.update(`${accent}-${text}`);
   return hash.digest('hex');
 }
 
@@ -14,13 +14,21 @@ const CACHE_DURATION = 24 * 60 * 60; // 24 hours in seconds
 
 // Function to get cached audio using unstable_cache
 const getCachedAudio = unstable_cache(
-  async (key: string, text: string, speakerId: string) => {
+  async (key: string, text: string, accent: string) => {
     console.log('Cache miss, fetching from external API:', text);
     
     // Fetch from the external API
     const encodedText = encodeURIComponent(text);
-    // const externalUrl = `https://tts.english-dictionary.app/api/tts?speaker_id=p335&text=${encodedText}`;
-    const externalUrl = `http://159.138.55.87:5003/api/tts?text=${encodedText}`;
+    let externalUrl;
+    
+    if (accent === 'en-GB') {
+      externalUrl = `http://159.138.55.87:5002/api/tts?speaker_id=p335&text=${encodedText}`; // en-GB
+    } else if (accent === 'en-IN') {
+      externalUrl = `http://159.138.55.87:5002/api/tts?speaker_id=p345&text=${encodedText}`; // en-IN
+    } else {
+      externalUrl = `http://159.138.55.87:5003/api/tts?text=${encodedText}`; // en-US (default)
+    }
+    
     console.log('External URL:', externalUrl);
     
     const response = await fetch(externalUrl);
@@ -49,7 +57,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const text = body.text;
-    const speakerId = body.speaker_id || 'p364'; // Default to p364 if not provided
+    const accent = body.accent || 'en-US'; // en-US, en-GB, en-IN
+    
     if (!text) {
       return NextResponse.json(
         { error: 'Missing required parameter: text' },
@@ -57,9 +66,9 @@ export async function POST(request: NextRequest) {
       );
     }
     // Create cache key
-    const cacheKey = createCacheKey(text, speakerId);
+    const cacheKey = createCacheKey(text, accent);
     // Get cached or fetch new audio (still base64 in cache)
-    const { base64Audio, contentType } = await getCachedAudio(cacheKey, text, speakerId);
+    const { base64Audio, contentType } = await getCachedAudio(cacheKey, text, accent);
     // Convert back to buffer and return as audio file
     const buffer = Buffer.from(base64Audio, 'base64');
     return new NextResponse(buffer, {

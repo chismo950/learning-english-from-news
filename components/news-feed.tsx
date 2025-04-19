@@ -206,7 +206,7 @@ export default function NewsFeed({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           text, 
-          speaker_id: selectedAccent
+          accent: selectedAccent
         })
       })
       if (!res.ok) throw new Error('TTS API error')
