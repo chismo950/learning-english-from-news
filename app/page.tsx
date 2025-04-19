@@ -280,7 +280,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
               <Button asChild variant="default" className="flex-grow md:flex-grow-0 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
-                <a href="https://apps.apple.com/app/id6744101843" target="_blank">Try It Now</a>
+                <a href="https://apps.apple.com/app/id6744784488" target="_blank">Try It Now</a>
               </Button>
               <Button variant="ghost" size="icon" onClick={hideBanner} className="ml-1">
                 <X className="h-4 w-4" />
