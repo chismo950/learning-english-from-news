@@ -52,7 +52,7 @@ export default function NewsFeed({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
-  const audioCache = useRef<Record<string, string>>({}) // sentenceId -> audioUrl
+  const audioCache = useRef<Record<string, string>>({}) // `${sentenceId}-${accent}` -> audioUrl
   const [openEnglish, setOpenEnglish] = useState<Record<string, boolean>>({})
   const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
   const [inputValues, setInputValues] = useState<Record<string, string>>({})
@@ -177,7 +177,10 @@ export default function NewsFeed({
     setPlayingAudioId(sentenceId)
     setIsLoading(prev => ({ ...prev, [sentenceId]: true }))
 
-    const cachedUrl = audioCache.current[sentenceId]
+    // Create a composite cache key that includes the accent
+    const cacheKey = `${sentenceId}-${selectedAccent}`
+    const cachedUrl = audioCache.current[cacheKey]
+    
     if (cachedUrl) {
       const audio = new Audio(cachedUrl)
       audioRef.current = audio
@@ -212,7 +215,8 @@ export default function NewsFeed({
       if (!res.ok) throw new Error('TTS API error')
       const blob = await res.blob()
       const audioUrl = URL.createObjectURL(blob)
-      audioCache.current[sentenceId] = audioUrl
+      // Store with the accent-specific cache key
+      audioCache.current[cacheKey] = audioUrl
       const audio = new Audio(audioUrl)
       audioRef.current = audio
       audio.playbackRate = audioSpeed
@@ -388,9 +392,9 @@ export default function NewsFeed({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="en-US">American English</SelectItem>
-              <SelectItem value="en-GB">British English</SelectItem>
-              <SelectItem value="en-IN">Indian English</SelectItem>
+              <SelectItem value="en-US">🇺🇸 American English</SelectItem>
+              <SelectItem value="en-GB">🇬🇧 British English</SelectItem>
+              <SelectItem value="en-IN">🇮🇳 Indian English</SelectItem>
             </SelectContent>
           </Select>
         </div>
