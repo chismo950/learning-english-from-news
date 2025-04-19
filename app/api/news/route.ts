@@ -32,13 +32,18 @@ async function fetchNewsForRegions(language: string, regions: string[], todayStr
   const allNews = []
 
   for (const region of regions) {
+    // Calculate yesterday's date based on todayStr
+    const today = new Date(todayStr);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
     const prompt = `
 Find the 5 latest news articles from ${region === "international" ? "international news" : region}.
 
 For each article:
 1. Break down the article into 3-5 key sentences.
 2. For each sentence, provide:
-   - The English version (using simple vocabulary from the 3000 most common English words when possible)
    - A translation in ${language} language
 
 IMPORTANT REQUIREMENTS:
@@ -46,7 +51,8 @@ IMPORTANT REQUIREMENTS:
 - If the news is not related to China, you can cite any media source worldwide.
 - DO NOT include any news that mentions Chinese leadership by name.
 - DO NOT provide any politically sensitive news related to China.
-- Use simple English vocabulary from the 3000 most common English words when possible.
+- ONLY include positive, uplifting or neutral news stories. DO NOT include negative news like disasters, accidents, crimes, conflicts, or other distressing events.
+- ONLY include news published on ${todayStr} or ${yesterdayStr}. DO NOT include any older news articles.
 
 Format your response as a JSON array with this structure:
 [
