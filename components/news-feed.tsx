@@ -57,6 +57,7 @@ export default function NewsFeed({
   const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
   const [inputValues, setInputValues] = useState<Record<string, string>>({})
   const [inputRows, setInputRows] = useState<Record<string, number>>({})
+  const [isScrolled, setIsScrolled] = useState(false)
 
   const getInitialAccent = () => {
     if (typeof window !== "undefined") {
@@ -127,6 +128,18 @@ export default function NewsFeed({
       window.localStorage.setItem("preferredAccent", selectedAccent)
     }
   }, [selectedAccent])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY
+      setIsScrolled(scrollPosition > 100) // Change state when scrolled more than 100px
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   const getBestVoiceForAccent = (accentCode: string): SpeechSynthesisVoice | null => {
     if (!availableVoices.length || !window.speechSynthesis) return null
@@ -346,61 +359,74 @@ export default function NewsFeed({
   const translationLabel = languages.find(l => l.code === nativeLanguage)?.name || "Translation"
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3 mb-3">
-        <div className="flex items-center gap-2 mb-1">
-          <label htmlFor="audio-speed" className="text-sm text-muted-foreground whitespace-nowrap">Speed:</label>
-          <Select
-            value={audioSpeed.toString()}
-            onValueChange={val => setAudioSpeed(Number(val))}
-          >
-            <SelectTrigger id="audio-speed" className="w-20 h-8 px-2 py-1 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0.7">0.7x</SelectItem>
-              <SelectItem value="0.85">0.85x</SelectItem>
-              <SelectItem value="1">1x</SelectItem>
-              <SelectItem value="1.15">1.15x</SelectItem>
-              <SelectItem value="1.3">1.3x</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2 mb-1">
-          <label htmlFor="study-mode" className="text-sm text-muted-foreground whitespace-nowrap">Mode:</label>
-          <Select
-            value={studyMode}
-            onValueChange={val => setStudyMode(val as "listening" | "easy" | "writing")}
-          >
-            <SelectTrigger id="study-mode" className="w-36 h-8 px-2 py-1 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="easy">Relaxed Mode</SelectItem>
-              <SelectItem value="listening">Listening Practice</SelectItem>
-              <SelectItem value="writing">Writing Practice</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2 mb-1">
-          <label htmlFor="accent-select" className="text-sm text-muted-foreground whitespace-nowrap">Accent:</label>
-          <Select
-            value={selectedAccent}
-            onValueChange={setSelectedAccent}
-          >
-            <SelectTrigger id="accent-select" className="w-24 h-8 px-2 py-1 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en-US">🇺🇸 American English</SelectItem>
-              <SelectItem value="en-GB">🇬🇧 British English</SelectItem>
-              <SelectItem value="en-IN">🇮🇳 Indian English</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="space-y-6 relative">
+      {/* Sticky controls container */}
+      <div id="sticky-controls"
+        className={`${
+          isScrolled ? "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm shadow-md py-3 px-4 transition-all" : ""
+        }`}
+      >
+        <div className="flex flex-wrap items-center gap-3 max-w-6xl mx-auto">
+          <div className="flex items-center gap-2">
+            <label htmlFor="audio-speed" className="text-sm text-muted-foreground whitespace-nowrap">Speed:</label>
+            <Select
+              value={audioSpeed.toString()}
+              onValueChange={val => setAudioSpeed(Number(val))}
+            >
+              <SelectTrigger id="audio-speed" className="w-20 h-8 px-2 py-1 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0.5">0.5x</SelectItem>
+                <SelectItem value="0.75">0.75x</SelectItem>
+                <SelectItem value="1">1x</SelectItem>
+                <SelectItem value="1.25">1.25x</SelectItem>
+                <SelectItem value="1.5">1.5x</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="accent-select" className="text-sm text-muted-foreground whitespace-nowrap">Accent:</label>
+            <Select
+              value={selectedAccent}
+              onValueChange={setSelectedAccent}
+            >
+              <SelectTrigger id="accent-select" className="w-24 h-8 px-2 py-1 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en-US">🇺🇸 American English</SelectItem>
+                <SelectItem value="en-GB">🇬🇧 British English</SelectItem>
+                <SelectItem value="en-IN">🇮🇳 Indian English</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {!isScrolled && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="study-mode" className="text-sm text-muted-foreground whitespace-nowrap">Mode:</label>
+              <Select
+                value={studyMode}
+                onValueChange={val => setStudyMode(val as "listening" | "easy" | "writing")}
+              >
+                <SelectTrigger id="study-mode" className="w-36 h-8 px-2 py-1 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Relaxed Mode</SelectItem>
+                  <SelectItem value="listening">Listening Practice</SelectItem>
+                  <SelectItem value="writing">Writing Practice</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Add padding when scrolled to prevent content jumping */}
+      {isScrolled && <div className="h-4"></div>}
+      
       {sortedNews.map((item, index) => (
-        <Card key={index} className="overflow-hidden">
+        <Card id={`news-${index}`} key={index} className="overflow-hidden">
           <CardHeader className="bg-muted/50">
             <div className="flex justify-between items-center">
               <div className="grow">
