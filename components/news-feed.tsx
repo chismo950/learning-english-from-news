@@ -412,9 +412,9 @@ export default function NewsFeed({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="easy">Relaxed Mode</SelectItem>
-                  <SelectItem value="listening">Listening Practice</SelectItem>
-                  <SelectItem value="writing">Writing Practice</SelectItem>
+                  <SelectItem value="easy">Relaxed Mode 😌</SelectItem>
+                  <SelectItem value="listening">Listening Practice 🎧</SelectItem>
+                  <SelectItem value="writing">Writing Practice ✍️</SelectItem>
                 </SelectContent>
               </Select>
             </div>
