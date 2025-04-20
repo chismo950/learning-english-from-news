@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, ExternalLink, ChevronDown, ChevronRight, Star } from "lucide-react"
+import { Play, ExternalLink, ChevronDown, ChevronRight, Star, Loader } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { 
@@ -469,8 +469,14 @@ export default function NewsFeed({
                           onClick={() => playSentence(sentence.english, sentenceKey)}
                           disabled={isLoading[sentenceKey]}
                         >
-                          <Play className="h-4 w-4" />
-                          <span className="sr-only">Play</span>
+                          {isLoading[sentenceKey] ? (
+                            <Loader className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {isLoading[sentenceKey] ? "Loading" : "Play"}
+                          </span>
                         </Button>
                         <Button
                           variant="ghost"
