@@ -12,7 +12,7 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Function to fetch news that will be cached
-async function fetchNewsForRegions(language: string, regions: string[], todayStr: string) {
+async function fetchNewsForRegions(language: string, regions: string[], todayStr: string, level: string) {
   // Parse API keys from environment variable
   let apiKeys: string[] = []
   try {
@@ -53,6 +53,7 @@ IMPORTANT REQUIREMENTS:
 - DO NOT provide any politically sensitive news related to China.
 - ONLY include positive, uplifting or neutral news stories. DO NOT include negative news like disasters, accidents, crimes, conflicts, or other distressing events.
 - ONLY include news published on ${todayStr} or ${yesterdayStr}. DO NOT include any older news articles.
+${level === 'intermediate' ? '- As this is for intermediate English learners, use vocabulary within the range of Wordly Wise 3000. Avoid complex or uncommon words outside this range.' : ''}
 
 Format your response as a JSON array with this structure:
 [
@@ -140,14 +141,16 @@ Return ONLY the JSON with no additional text, no markdown formatting, and no cod
 }
 
 // Create a function that returns a cached version of fetchNewsForRegions with specific parameters
-function getCachedNews(language: string, regions: string[], todayStr: string) {
+function getCachedNews(language: string, regions: string[], todayStr: string, level: string) {
   // Sort regions alphabetically before joining
   const cacheKey = ['news-api-cache', language, regions.sort().join(','), todayStr];
+  // Include level in cache key
+  cacheKey.splice(3, 0, level)
   
   // Create a cached function with these specific parameters
   const cachedFetch = unstable_cache(
     async () => {
-      return await fetchNewsForRegions(language, regions, todayStr);
+      return await fetchNewsForRegions(language, regions, todayStr, level);
     },
     cacheKey,
     {
@@ -164,10 +167,10 @@ function getCachedNews(language: string, regions: string[], todayStr: string) {
 // Update the POST function to handle markdown-formatted JSON responses
 export async function POST(request: Request) {
   try {
-    const { language, regions } = await request.json()
+    const { language, regions, level } = await request.json()
 
-    if (!language || !regions || regions.length === 0) {
-      return Response.json({ error: "Language and regions are required" }, { status: 400 })
+    if (!language || !regions || regions.length === 0 || !level || (level !== 'intermediate' && level !== 'advanced')) {
+      return Response.json({ error: "Language, regions, and valid level are required" }, { status: 400 })
     }
 
     // Get today's date
@@ -175,8 +178,8 @@ export async function POST(request: Request) {
     const todayStr = today.toISOString().split("T")[0]
 
     try {
-      // Use the cached function
-      const allNews = await getCachedNews(language, regions, todayStr)
+      // Use the cached function including level
+      const allNews = await getCachedNews(language, regions, todayStr, level)
       return Response.json({ news: allNews })
     } catch (error) {
       console.error("Error processing request:", error)

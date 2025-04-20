@@ -11,6 +11,7 @@ import { Loader2, Settings, X } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { detectAppleSiliconMac, isInAppWebview, isIOSorIPad } from "@/lib/utils"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 // Define interfaces for the news and history data
 interface NewsItem {
@@ -38,6 +39,7 @@ export default function Home() {
   const [nativeLanguage, setNativeLanguage] = useState("")
   const [selectedRegions, setSelectedRegions] = useState<string[]>([])
   const [accent, setAccent] = useState("en-NZ")
+  const [level, setLevel] = useState("intermediate")
   const [newsData, setNewsData] = useState<NewsItem[]>([])
   const [history, setHistory] = useState<NewsHistory>({})
   const [currentTab, setCurrentTab] = useState("today")
@@ -57,7 +59,7 @@ export default function Home() {
     // Load preferences from localStorage
     const storedLanguage = localStorage.getItem("nativeLanguage")
     const storedRegions = localStorage.getItem("selectedRegions")
-    // const storedAccent = localStorage.getItem("accent")
+    const storedLevel = localStorage.getItem("level")
     const storedHistory = localStorage.getItem("newsHistory")
 
     // Parse stored history
@@ -70,6 +72,8 @@ export default function Home() {
         console.error("Error parsing stored history:", e)
       }
     }
+
+    if (storedLevel) setLevel(storedLevel)
 
     // Check if we have today's data
     const today = getTodayString()
@@ -91,7 +95,6 @@ export default function Home() {
         setSelectedRegions([])
       }
     }
-    // if (storedAccent) setAccent(storedAccent)
 
     // If preferences exist and we don't have today's data, show preferences
     // Otherwise, hide preferences and show news
@@ -162,6 +165,7 @@ export default function Home() {
         body: JSON.stringify({
           language: nativeLanguage,
           regions: selectedRegions,
+          level,
         }),
       })
 
@@ -226,21 +230,12 @@ export default function Home() {
     // Save preferences
     localStorage.setItem("nativeLanguage", nativeLanguage)
     localStorage.setItem("selectedRegions", JSON.stringify(selectedRegions))
-    // localStorage.setItem("accent", accent)
+    localStorage.setItem("level", level)
 
     // Hide preferences panel
     setShowPreferences(false)
 
-    fetchNews(); return // fetch anyway even if we have today's data
-
-    // Check if we already have today's data
-    const today = getTodayString()
-    if (history[today] && history[today].length > 0) {
-      setNewsData(history[today])
-    } else {
-      // Fetch news if we don't have today's data
-      fetchNews()
-    }
+    fetchNews();
   }
 
   const getHistoryDates = () => {
@@ -306,7 +301,19 @@ export default function Home() {
             <div className="space-y-6">
               <LanguageSelector value={nativeLanguage} onChange={setNativeLanguage} />
               <RegionSelector value={selectedRegions} onChange={setSelectedRegions} />
-              {/* <AccentSelector value={accent} onChange={setAccent} /> */}
+              <div className="flex flex-col">
+                <label className="block text-base font-medium mb-1">Proficiency Level</label>
+                <RadioGroup value={level} onValueChange={setLevel} className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <RadioGroupItem value="intermediate" id="level-intermediate" />
+                    <label htmlFor="level-intermediate">🌿 Intermediate</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <RadioGroupItem value="advanced" id="level-advanced" />
+                    <label htmlFor="level-advanced">🌳 Advanced</label>
+                  </div>
+                </RadioGroup>
+              </div>
 
               <div className="flex justify-end">
                 <Button onClick={savePreferences}>Save & Continue</Button>
