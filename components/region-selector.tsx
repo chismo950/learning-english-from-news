@@ -7,19 +7,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 
 export const regions = [
-  { code: "new-zealand", name: "New Zealand", flag: "🇳🇿" },
-  { code: "china", name: "China", flag: "🇨🇳" },
-  { code: "sri-lanka", name: "Sri Lanka", flag: "🇱🇰" },
-  { code: "germany", name: "Germany", flag: "🇩🇪" },
-  { code: "japan", name: "Japan", flag: "🇯🇵" },
-  { code: "korea", name: "Korea", flag: "🇰🇷" },
-  { code: "france", name: "France", flag: "🇫🇷" },
-  { code: "spain", name: "Spain", flag: "🇪🇸" },
-  { code: "thailand", name: "Thailand", flag: "🇹🇭" },
-  { code: "brazil", name: "Brazil", flag: "🇧🇷" },
-  { code: "mexico", name: "Mexico", flag: "🇲🇽" },
-  { code: "colombia", name: "Colombia", flag: "🇨🇴" },
-  { code: "international", name: "International News", flag: "🌎" },
+  { code: "new-zealand",    name: "New Zealand",      flag: "🇳🇿" },
+  { code: "china",          name: "China",            flag: "🇨🇳" },
+  { code: "vietnam",        name: "Vietnam",          flag: "🇻🇳" },  // added
+  { code: "sri-lanka",      name: "Sri Lanka",        flag: "🇱🇰" },
+  { code: "germany",        name: "Germany",          flag: "🇩🇪" },
+  { code: "japan",          name: "Japan",            flag: "🇯🇵" },
+  { code: "korea",          name: "Korea",            flag: "🇰🇷" },
+  { code: "france",         name: "France",           flag: "🇫🇷" },
+  { code: "spain",          name: "Spain",            flag: "🇪🇸" },
+  { code: "thailand",       name: "Thailand",         flag: "🇹🇭" },
+  { code: "brazil",         name: "Brazil",           flag: "🇧🇷" },
+  { code: "mexico",         name: "Mexico",           flag: "🇲🇽" },
+  { code: "colombia",       name: "Colombia",         flag: "🇨🇴" },
+  { code: "international",  name: "International",    flag: "🌎" },
 ]
 
 interface RegionSelectorProps {

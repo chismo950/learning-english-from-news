@@ -15,6 +15,7 @@ export const languages = [
   { code: "es", name: "Español", flag: "es" },
   { code: "pt", name: "Português", flag: "pt" },
   { code: "th", name: "ไทย", flag: "🇹🇭" },
+  { code: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
 ]
 
 interface LanguageSelectorProps {
