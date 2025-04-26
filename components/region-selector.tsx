@@ -16,6 +16,7 @@ export const regions = [
   { code: "korea",          name: "Korea",            flag: "🇰🇷" },
   { code: "france",         name: "France",           flag: "🇫🇷" },
   { code: "spain",          name: "Spain",            flag: "🇪🇸" },
+  { code: "russia",         name: "Russia",           flag: "🇷🇺" },
   { code: "thailand",       name: "Thailand",         flag: "🇹🇭" },
   { code: "brazil",         name: "Brazil",           flag: "🇧🇷" },
   { code: "mexico",         name: "Mexico",           flag: "🇲🇽" },
