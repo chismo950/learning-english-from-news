@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, ExternalLink, ChevronDown, ChevronRight, Star, Loader } from "lucide-react"
+import { Play, ExternalLink, ChevronDown, ChevronRight, Star, Loader, Copy, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { 
@@ -58,6 +58,7 @@ export default function NewsFeed({
   const [inputValues, setInputValues] = useState<Record<string, string>>({})
   const [inputRows, setInputRows] = useState<Record<string, number>>({})
   const [isScrolled, setIsScrolled] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const getInitialAccent = () => {
     if (typeof window !== "undefined") {
@@ -348,6 +349,22 @@ export default function NewsFeed({
 
   const sortedNews = feedNews
 
+  // gather all titles + English sentences and copy to clipboard
+  const copyAllEnglish = () => {
+    const lines: string[] = []
+    sortedNews.forEach(item => {
+      lines.push(item.title)
+      item.sentences.forEach(s => lines.push(s.english))
+      lines.push("")
+    })
+    navigator.clipboard.writeText(lines.join("\n"))
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1000)
+      })
+      .catch(err => console.error("Copy failed:", err))
+  }
+
   if (news.length === 0) {
     return (
       <div className="text-center py-12">
@@ -573,6 +590,19 @@ export default function NewsFeed({
           </CardContent>
         </Card>
       ))}
+
+      {/* add a button here to copy all english sentences including titles */}
+      {sortedNews.length > 0 && (
+        <div className="text-center py-4">
+          <Button variant="outline" size="sm" onClick={copyAllEnglish}>
+            {copied
+              ? <Check className="h-4 w-4 mr-2 text-green-500" />
+              : <Copy className="h-4 w-4 mr-2" />
+            }
+            Copy All English
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
