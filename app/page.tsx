@@ -48,6 +48,9 @@ export default function Home() {
   const [isSticky, setIsSticky] = useState(false)
   const [isBannerHidden, setIsBannerHidden] = useState(false)
   const [showBanner, setShowBanner] = useState(false)
+  const [loadingPercentage, setLoadingPercentage] = useState(0);
+  const [displayPercentage, setDisplayPercentage] = useState(0);
+  const targetPercentageRef = useRef(5); // Start at 5% to show immediate progress
   const bannerRef = useRef<HTMLDivElement>(null)
 
   // Get today's date in YYYY-MM-DD format
@@ -246,6 +249,45 @@ export default function Home() {
     setIsBannerHidden(true);
   };
 
+  // Effect to randomly increase target percentage
+  useEffect(() => {
+    if (!loading) {
+      setDisplayPercentage(0);
+      targetPercentageRef.current = 5; // Reset to 5% for next time
+      return;
+    }
+    
+    // Small initial delay before starting percentage
+    const initialDelay = setTimeout(() => {
+      const interval = setInterval(() => {
+        const increment = Math.random() * 2.9 + 0.1; // Random between 0.1% and 2%
+        targetPercentageRef.current = Math.min(99.99, targetPercentageRef.current + increment);
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }, 300);
+    
+    return () => clearTimeout(initialDelay);
+  }, [loading]);
+  
+  // Effect for smooth animation
+  useEffect(() => {
+    if (!loading) return;
+    
+    const step = 0.05; // Increased step size for more visible changes
+    
+    const animationInterval = setInterval(() => {
+      setDisplayPercentage(prev => {
+        if (prev < targetPercentageRef.current) {
+          return Math.min(targetPercentageRef.current, prev + step);
+        }
+        return prev;
+      });
+    }, 16); // ~60fps
+    
+    return () => clearInterval(animationInterval);
+  }, [loading]);
+
   return (
     <main className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
@@ -348,9 +390,12 @@ export default function Home() {
 
                 <TabsContent value="today">
                   {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                      <span className="ml-2">Fetching latest news...</span>
+                    <div>
+                      <div className="flex justify-center items-center mt-32">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                        <span className="ml-2">Fetching latest news...</span>
+                      </div>
+                      <div className="text-center">{displayPercentage.toFixed(2)}%</div>
                     </div>
                   ) : (
                     <>
