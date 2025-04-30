@@ -1,5 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { unstable_cache } from 'next/cache'
+import { Redis } from '@upstash/redis'
+
+// Initialize Redis client
+const redis = new Redis({ url: process.env.KV_REST_API_URL || '', token: process.env.KV_REST_API_TOKEN || '' })
+
+// Helper function to generate consistent Redis key
+function generateRedisKey(language: string, regions: string[], todayStr: string, level: string): string {
+  const sortedRegions = [...regions].sort().join('_');
+  return `news_${todayStr}_${language}_${sortedRegions}_${level}`;
+}
 
 // Helper function to shuffle an array
 function shuffleArray<T>(array: T[]): T[] {
@@ -13,6 +23,17 @@ function shuffleArray<T>(array: T[]): T[] {
 
 // Function to fetch news that will be cached
 async function fetchNewsForRegions(language: string, regions: string[], todayStr: string, level: string) {
+  // Check Redis cache first
+  const redisKey = generateRedisKey(language, regions, todayStr, level);
+  const cachedNews = await redis.get(redisKey);
+  
+  if (cachedNews) {
+    console.log(`Cache hit for ${redisKey}`);
+    return cachedNews;
+  }
+  
+  console.log(`Cache miss for ${redisKey}, fetching from AI...`);
+  
   // Parse API keys from environment variable
   let apiKeys: string[] = []
   try {
@@ -137,15 +158,19 @@ Return ONLY the JSON with no additional text, no markdown formatting, and no cod
     }
   }
 
+  // Cache the result in Redis with 24-hour expiration
+  if (allNews.length > 0) {
+    await redis.set(redisKey, allNews, { ex: 86400 }); // 24 hours in seconds
+    console.log(`Cached news data in Redis with key: ${redisKey}`);
+  }
+
   return allNews
 }
 
 // Create a function that returns a cached version of fetchNewsForRegions with specific parameters
 function getCachedNews(language: string, regions: string[], todayStr: string, level: string) {
   // Sort regions alphabetically before joining
-  const cacheKey = ['news-api-cache', language, regions.sort().join(','), todayStr];
-  // Include level in cache key
-  cacheKey.splice(3, 0, level)
+  const cacheKey = ['news-api-cache', language, regions.sort().join(','), todayStr, level];
   
   // Create a cached function with these specific parameters
   const cachedFetch = unstable_cache(
