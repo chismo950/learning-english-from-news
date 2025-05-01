@@ -8,7 +8,7 @@ const redis = new Redis({ url: process.env.KV_REST_API_URL || '', token: process
 
 // Create a cache key in the format audit_accent_text
 function createCacheKey(text: string, accent: string): string {
-  return `audit_${accent}_${text}`;
+  return `audio_${accent}_${text}`;
 }
 
 // Cache duration
