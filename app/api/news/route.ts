@@ -74,6 +74,7 @@ IMPORTANT REQUIREMENTS:
 - DO NOT provide any politically sensitive news related to China.
 - ONLY include positive, uplifting or neutral news stories. DO NOT include negative news like disasters, accidents, crimes, conflicts, or other distressing events.
 - ONLY include news published on ${todayStr} or ${yesterdayStr}. DO NOT include any older news articles.
+- REMOVE ALL citation markers, reference numbers, and footnotes (like [1], [2, 6], etc.) from English sentences. Do not include any square brackets with numbers.
 ${level === 'intermediate' ? '- As this is for intermediate English learners, use vocabulary within the range of Wordly Wise 3000. Avoid complex or uncommon words outside this range.' : ''}
 
 Format your response as a JSON array with this structure:
@@ -107,7 +108,7 @@ Return ONLY the JSON with no additional text, no markdown formatting, and no cod
       try {
         const genAI = new GoogleGenerativeAI(apiKey)
         const genModel = genAI.getGenerativeModel({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-2.0-flash', // gemini-2.0-flash
           tools: [
             {
               // @ts-ignore
