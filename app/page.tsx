@@ -433,7 +433,7 @@ export default function Home() {
                       news={history[date] || []}
                       accent={accent}
                       isHistory
-                      nativeLanguage={history[date][0].nativeLanguage ?? nativeLanguage}
+                      nativeLanguage={history?.[date]?.[0]?.nativeLanguage ?? nativeLanguage}
                       date={date}
                     />
                   </TabsContent>
