@@ -21,11 +21,25 @@ function shuffleArray<T>(array: T[]): T[] {
   return newArray
 }
 
+// Define data shapes
+interface Sentence { english: string; translated: string }
+interface Article {
+  title: string
+  titleTranslated: string
+  region: string
+  sentences: Sentence[]
+  source: string
+  sourceUrl: string
+  publishedDate: string
+}
+
 // Function to fetch news that will be cached
-async function fetchNewsForRegions(language: string, regions: string[], todayStr: string, level: string) {
+async function fetchNewsForRegions(
+  language: string, regions: string[], todayStr: string, level: string
+): Promise<Article[]> {
   // Check Redis cache first
   const redisKey = generateRedisKey(language, regions, todayStr, level);
-  const cachedNews = await redis.get(redisKey);
+  const cachedNews = await redis.get<Article[]>(redisKey);
   
   if (cachedNews) {
     console.log(`Cache hit for ${redisKey}`);
@@ -50,7 +64,7 @@ async function fetchNewsForRegions(language: string, regions: string[], todayStr
   const shuffledApiKeys = shuffleArray(apiKeys)
 
   // Collect news for all selected regions
-  const allNews = []
+  const allNews: Article[] = []
 
   for (const region of regions) {
     // Calculate yesterday's date based on todayStr
@@ -169,7 +183,9 @@ Return ONLY the JSON with no additional text, no markdown formatting, and no cod
 }
 
 // Create a function that returns a cached version of fetchNewsForRegions with specific parameters
-function getCachedNews(language: string, regions: string[], todayStr: string, level: string) {
+function getCachedNews(
+  language: string, regions: string[], todayStr: string, level: string
+): Promise<Article[]> {
   // Sort regions alphabetically before joining
   const cacheKey = ['news-api-cache', language, regions.sort().join(','), todayStr, level];
   
@@ -206,6 +222,14 @@ export async function POST(request: Request) {
     try {
       // Use the cached function including level
       const allNews = await getCachedNews(language, regions, todayStr, level)
+
+      // Remove footnotes from English sentences before sending response
+      allNews.forEach(article => {
+        article.sentences.forEach(sent => {
+          sent.english = sent.english.replace(/\[\d+(?:,\s*\d+)*\]/g, '').trim()
+        })
+      })
+
       return Response.json({ news: allNews })
     } catch (error) {
       console.error("Error processing request:", error)
