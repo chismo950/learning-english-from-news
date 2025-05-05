@@ -9,7 +9,7 @@ import { AlertCircle } from "lucide-react"
 export const regions = [
   { code: "new-zealand",    name: "New Zealand",      flag: "🇳🇿" },
   { code: "china",          name: "China",            flag: "🇨🇳" },
-  { code: "vietnam",        name: "Vietnam",          flag: "🇻🇳" },  // added
+  { code: "vietnam",        name: "Vietnam",          flag: "🇻🇳" },
   { code: "sri-lanka",      name: "Sri Lanka",        flag: "🇱🇰" },
   { code: "germany",        name: "Germany",          flag: "🇩🇪" },
   { code: "japan",          name: "Japan",            flag: "🇯🇵" },
@@ -21,6 +21,9 @@ export const regions = [
   { code: "brazil",         name: "Brazil",           flag: "🇧🇷" },
   { code: "mexico",         name: "Mexico",           flag: "🇲🇽" },
   { code: "colombia",       name: "Colombia",         flag: "🇨🇴" },
+  { code: "morocco",        name: "Morocco",          flag: "🇲🇦" },
+  { code: "egypt",          name: "Egypt",            flag: "🇪🇬" },
+  { code: "saudi-arabia",   name: "Saudi Arabia",     flag: "🇸🇦" },
   { code: "international",  name: "International",    flag: "🌎" },
 ]
 

@@ -16,8 +16,8 @@ export const languages = [
   { code: "pt", name: "Português", flag: "pt" },
   { code: "th", name: "ไทย", flag: "🇹🇭" },
   { code: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
-  // Added Russian
   { code: "ru", name: "Русский", flag: "🇷🇺" },
+  { code: "ar", name: "العربية", flag: "🇸🇦" },
 ]
 
 interface LanguageSelectorProps {
