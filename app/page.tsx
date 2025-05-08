@@ -108,11 +108,13 @@ export default function Home() {
     }
 
     (async ()=>{
+      const isAppleSiliconMac = await detectAppleSiliconMac() === true
+      console.log('isAppleSiliconMac', isAppleSiliconMac)
       setShowBanner(
         !isInAppWebview()
         && (
           isIOSorIPad()
-          || await detectAppleSiliconMac() === true
+          || isAppleSiliconMac
         )
       )
     })();
