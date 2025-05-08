@@ -53,6 +53,7 @@ export default function NewsFeed({
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({})
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
   const audioCache = useRef<Record<string, string>>({}) // `${sentenceId}-${accent}` -> audioUrl
+  const latestAudioRequestRef = useRef<string | null>(null) // Track the latest audio request
   const [openEnglish, setOpenEnglish] = useState<Record<string, boolean>>({})
   const [openTranslation, setOpenTranslation] = useState<Record<string, boolean>>({})
   const [inputValues, setInputValues] = useState<Record<string, string>>({})
@@ -188,6 +189,10 @@ export default function NewsFeed({
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
+    
+    // Set this as the latest requested audio
+    latestAudioRequestRef.current = sentenceId
+    
     setPlayingAudioId(sentenceId)
     setIsLoading(prev => ({ ...prev, [sentenceId]: true }))
 
@@ -197,7 +202,8 @@ export default function NewsFeed({
     
     if (cachedUrl) {
       const audio = new Audio(cachedUrl)
-      audioRef.current = audio
+      
+      // Only set up and play if this is still the latest requested audio
       audio.playbackRate = audioSpeed
       audio.oncanplaythrough = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
@@ -208,52 +214,103 @@ export default function NewsFeed({
       }
       audio.onerror = () => {
         setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
-        const ttsFallbackSuccessful = playWithBrowserTTS(text)
-        if (!ttsFallbackSuccessful) {
-          console.error('Browser TTS fallback also failed')
+        // Only try fallback if this is still the latest request
+        if (latestAudioRequestRef.current === sentenceId) {
+          const ttsFallbackSuccessful = playWithBrowserTTS(text)
+          if (!ttsFallbackSuccessful) {
+            console.error('Browser TTS fallback also failed')
+          }
         }
       }
-      await audio.play()
-      return
-    }
-
-    try {
-      const res = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text, 
-          accent: selectedAccent
+      
+      try {
+        // Make a final check right before playing to ensure this is still the latest request
+        if (latestAudioRequestRef.current === sentenceId) {
+          audioRef.current = audio;
+          await audio.play();
+        } else {
+          console.log('Skipping play, no longer the latest request:', sentenceId);
+          setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+        }
+      } catch (playError) {
+        console.error('Error playing audio:', playError);
+        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+      }
+    } else {
+      try {
+        const res = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            text, 
+            accent: selectedAccent
+          })
         })
-      })
-      if (!res.ok) throw new Error('TTS API error')
-      const blob = await res.blob()
-      const audioUrl = URL.createObjectURL(blob)
-      // Store with the accent-specific cache key
-      audioCache.current[cacheKey] = audioUrl
-      const audio = new Audio(audioUrl)
-      audioRef.current = audio
-      audio.playbackRate = audioSpeed
-      audio.oncanplaythrough = () => {
-        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
-      }
-      audio.onended = () => {
-        setPlayingAudioId(null)
-        audioRef.current = null
-      }
-      audio.onerror = () => {
-        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
-        const ttsFallbackSuccessful = playWithBrowserTTS(text)
-        if (!ttsFallbackSuccessful) {
-          console.error('Browser TTS fallback also failed')
+        if (!res.ok) throw new Error('TTS API error')
+        const blob = await res.blob()
+        const audioUrl = URL.createObjectURL(blob)
+        // Store with the accent-specific cache key
+        audioCache.current[cacheKey] = audioUrl
+        
+        // Check if this is still the latest requested audio
+        if (latestAudioRequestRef.current === sentenceId) {
+          const audio = new Audio(audioUrl)
+          audio.playbackRate = audioSpeed
+          audio.oncanplaythrough = () => {
+            setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+          }
+          audio.onended = () => {
+            setPlayingAudioId(null)
+            audioRef.current = null
+          }
+          audio.onerror = () => {
+            setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+            // Only try fallback if this is still the latest request
+            if (latestAudioRequestRef.current === sentenceId) {
+              const ttsFallbackSuccessful = playWithBrowserTTS(text)
+              if (!ttsFallbackSuccessful) {
+                console.error('Browser TTS fallback also failed')
+              }
+            }
+          }
+          
+          try {
+            // Final check before playing
+            console.log('About to play audio for:', sentenceId, 'Latest is:', latestAudioRequestRef.current);
+            if (latestAudioRequestRef.current === sentenceId) {
+              audioRef.current = audio;
+              await audio.play();
+            } else {
+              console.log('Skipping API audio play, no longer latest request:', sentenceId);
+              setIsLoading(prev => ({ ...prev, [sentenceId]: false }));
+            }
+          } catch (playError) {
+            console.error('Error playing fetched audio:', playError);
+            setIsLoading(prev => ({ ...prev, [sentenceId]: false }));
+            
+            // Try TTS fallback on play error
+            if (latestAudioRequestRef.current === sentenceId) {
+              const ttsFallbackSuccessful = playWithBrowserTTS(text);
+              if (!ttsFallbackSuccessful) {
+                console.error('Browser TTS fallback also failed');
+              }
+            }
+          }
+        } else {
+          // Just clear loading state if this isn't the latest request
+          console.log('API fetch completed but not playing as no longer latest request:', sentenceId);
+          setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
         }
-      }
-      await audio.play()
-    } catch (err) {
-      setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
-      const ttsFallbackSuccessful = playWithBrowserTTS(text)
-      if (!ttsFallbackSuccessful) {
-        console.error('Browser TTS fallback also failed')
+      } catch (err) {
+        console.error('Error fetching audio:', err);
+        setIsLoading(prev => ({ ...prev, [sentenceId]: false }))
+        // Only try fallback if this is still the latest request
+        if (latestAudioRequestRef.current === sentenceId) {
+          const ttsFallbackSuccessful = playWithBrowserTTS(text)
+          if (!ttsFallbackSuccessful) {
+            console.error('Browser TTS fallback also failed')
+          }
+        }
       }
     }
   }
@@ -268,6 +325,7 @@ export default function NewsFeed({
       window.speechSynthesis.cancel()
     }
     
+    latestAudioRequestRef.current = null
     setPlayingAudioId(null)
   }
 
