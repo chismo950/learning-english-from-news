@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { unstable_cache } from 'next/cache';
-import crypto from 'crypto';
 import { Redis } from '@upstash/redis'
 
 // Initialize Redis client
@@ -12,7 +10,7 @@ function createCacheKey(text: string, accent: string): string {
 }
 
 // Cache duration
-const CACHE_DURATION = 24 * 60 * 60; // 24 hours in seconds
+const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds
 
 // Function to get cached audio using Redis
 async function getCachedAudio(text: string, accent: string) {
