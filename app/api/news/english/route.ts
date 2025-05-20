@@ -64,7 +64,8 @@ IMPORTANT REQUIREMENTS:
 - If the news is related to China, ONLY cite Chinese media sources with domains ending in .cn
 - If the news is not related to China, you can cite any media source worldwide.
 - DO NOT include any news that mentions Chinese leadership by name.
-- DO NOT provide any politically sensitive news related to China.
+- DO NOT include any politically sensitive news related to China.
+- DO NOT include any news related to Taiwan.
 - ONLY include positive, uplifting or neutral news stories. DO NOT include negative news like disasters, accidents, crimes, conflicts, or other distressing events.
 - ONLY include news published on ${todayStr} or ${yesterdayStr}. DO NOT include any older news articles.
 - ${levelInstruction}
