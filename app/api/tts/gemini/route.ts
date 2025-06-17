@@ -67,6 +67,42 @@ async function cacheAudio(text: string, accent: string, wavBuffer: Buffer) {
   console.log('Audio cached for:', text);
 }
 
+// Function to attempt API call with all keys
+async function attemptAPICall(text: string, accent: string, keys: string[]) {
+  const shuffledKeys = shuffleArray(keys);
+  let response;
+  let lastError: unknown;
+  
+  // Try each key until one succeeds
+  for (const key of shuffledKeys) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: key });
+      response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-preview-tts',
+        contents: [{ parts: [{ text: `Read the following text in a strong ${accent} accent: ${text}` }] }],
+        config: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
+          },
+        },
+      });
+      // success: break out
+      lastError = null;
+      break;
+    } catch (err: unknown) {
+      lastError = err;
+      // try next key
+    }
+  }
+  
+  if (!response) {
+    throw lastError;
+  }
+  
+  return response;
+}
+
 // 强制动态，确保不走静态缓存
 export const dynamic = 'force-dynamic'
 
@@ -110,49 +146,46 @@ export async function GET(request: NextRequest) {
           headers: { 'Content-Type': 'application/json' },
         });
       }
-      const shuffledKeys = shuffleArray(keys);
+
       let response;
-      let lastError: unknown;
-      // Try each key until one succeeds
-      for (const key of shuffledKeys) {
+      let base64Data = '';
+      const maxRetries = 3;
+      
+      // Retry up to 3 times if no base64Data is returned
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          const ai = new GoogleGenAI({ apiKey: key });
-          response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-preview-tts',
-            contents: [{ parts: [{ text: `Read the following text in a strong ${accent} accent: ${text}` }] }],
-            config: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
-              },
-            },
-          });
-          // success: break out
-          lastError = null;
-          break;
+          response = await attemptAPICall(text, accent, keys);
+          base64Data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || '';
+          
+          if (base64Data) {
+            break; // Success, exit retry loop
+          }
+          
+          console.log(`Attempt ${attempt + 1}: No audio data generated, retrying...`);
         } catch (err: unknown) {
-          lastError = err;
-          // try next key
+          // If this is the last attempt, handle the error
+          if (attempt === maxRetries - 1) {
+            const status = (err && typeof err === 'object' && 'statusCode' in err) ? (err as { statusCode: number }).statusCode : 500;
+            const message = (err && typeof err === 'object' && 'message' in err) ? (err as { message: string }).message : 'All API keys failed';
+            return new Response(JSON.stringify({ error: message }), {
+              status,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+          console.log(`Attempt ${attempt + 1}: API call failed, retrying...`);
         }
       }
-      if (!response) {
-        const status = (lastError && typeof lastError === 'object' && 'statusCode' in lastError) ? (lastError as { statusCode: number }).statusCode : 500;
-        const message = (lastError && typeof lastError === 'object' && 'message' in lastError) ? (lastError as { message: string }).message : 'All API keys failed';
-        return new Response(JSON.stringify({ error: message }), {
-          status,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      const base64Data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || '';
-      // console.log('base64Data', base64Data);
-      console.log('response.candidates?.[0]?.content', response.candidates?.[0]?.content); // might undefined
+
+      console.log('response.candidates?.[0]?.content', response?.candidates?.[0]?.content);
       if (!base64Data) {
         console.log('response', response)
-        return new Response(JSON.stringify({ error: 'No audio data generated' }), {
+        console.log('response?.usageMetadata?.promptTokensDetails?.[0]', response?.usageMetadata?.promptTokensDetails?.[0])
+        return new Response(JSON.stringify({ error: 'No audio data generated after 3 attempts' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
         });
       }
+      
       const fullBuffer = Buffer.from(base64Data, 'base64');
       // If buffer already contains a WAV header, use directly; otherwise wrap PCM manually
       const prefix = fullBuffer.slice(0, 4).toString();
