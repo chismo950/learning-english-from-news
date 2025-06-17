@@ -64,12 +64,12 @@ export default function NewsFeed({
   const getInitialAccent = () => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem("preferredAccent")
-      if (stored && (stored === "en-US" || stored === "en-GB" || stored === "en-IN")) {
+      if (stored && (stored === "American" || stored === "British" || stored === "Indian")) {
         return stored
       }
     }
     // Default to en-US regardless of initialAccent
-    return "en-US"
+    return "American"
   }
 
   const [selectedAccent, setSelectedAccent] = useState(getInitialAccent)
@@ -238,14 +238,7 @@ export default function NewsFeed({
       }
     } else {
       try {
-        const res = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            text, 
-            accent: selectedAccent
-          })
-        })
+        const res = await fetch(`/api/tts/gemini?accent=${encodeURIComponent(selectedAccent)}&text=${encodeURIComponent(text)}`)
         if (!res.ok) throw new Error('TTS API error')
         const blob = await res.blob()
         const audioUrl = URL.createObjectURL(blob)
@@ -470,9 +463,9 @@ export default function NewsFeed({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en-US">🇺🇸 American English</SelectItem>
-                <SelectItem value="en-GB">🇬🇧 British English</SelectItem>
-                <SelectItem value="en-IN">🇮🇳 Indian English</SelectItem>
+                <SelectItem value="American">🇺🇸 American English</SelectItem>
+                <SelectItem value="British">🇬🇧 British English</SelectItem>
+                <SelectItem value="Indian">🇮🇳 Indian English</SelectItem>
               </SelectContent>
             </Select>
           </div>
