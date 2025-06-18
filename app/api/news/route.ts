@@ -122,7 +122,7 @@ Return ONLY the JSON with no additional text, no markdown formatting, and no cod
       try {
         const genAI = new GoogleGenerativeAI(apiKey)
         const genModel = genAI.getGenerativeModel({
-          model: 'gemini-2.0-flash', // gemini-2.0-flash
+          model: 'gemini-2.5-flash',
           tools: [
             {
               // @ts-ignore
