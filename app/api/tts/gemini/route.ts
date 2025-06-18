@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
       let base64Data = '';
       const maxRetries = 3;
       
-      // Retry up to 3 times if no base64Data is returned
+      // Retry up to 3 times, cycling through all available keys
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           response = await attemptAPICall(text, accent, keys);
@@ -161,18 +161,10 @@ export async function GET(request: NextRequest) {
             break; // Success, exit retry loop
           }
           
-          console.log(`Attempt ${attempt + 1}: No audio data generated, retrying...`);
+          console.log(`Attempt ${attempt + 1}: No audio data generated, trying different API keys...`);
         } catch (err: unknown) {
-          // If this is the last attempt, handle the error
-          if (attempt === maxRetries - 1) {
-            const status = (err && typeof err === 'object' && 'statusCode' in err) ? (err as { statusCode: number }).statusCode : 500;
-            const message = (err && typeof err === 'object' && 'message' in err) ? (err as { message: string }).message : 'All API keys failed';
-            return new Response(JSON.stringify({ error: message }), {
-              status,
-              headers: { 'Content-Type': 'application/json' },
-            });
-          }
           console.log(`Attempt ${attempt + 1}: API call failed, retrying...`);
+          // Continue to next attempt instead of returning error immediately
         }
       }
 
@@ -180,7 +172,7 @@ export async function GET(request: NextRequest) {
       if (!base64Data) {
         console.log('response', response)
         console.log('response?.usageMetadata?.promptTokensDetails?.[0]', response?.usageMetadata?.promptTokensDetails?.[0])
-        return new Response(JSON.stringify({ error: 'No audio data generated after 3 attempts' }), {
+        return new Response(JSON.stringify({ error: 'No audio data generated after trying all API keys 3 times' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
         });
