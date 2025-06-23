@@ -74,12 +74,30 @@ async function attemptAPICall(text: string, accent: string, keys: string[]) {
   let lastError: unknown;
   
   // Try each key until one succeeds
+  let ttsText = 'Read the following text: ' + text;
+  switch (accent) {
+    case 'American':
+      ttsText = 'Read the following text in an American accent: ' + text;
+      break;
+    case 'British':
+      ttsText = 'Read the following text in a British accent: ' + text;
+      break;
+    case 'Australian':
+      ttsText = 'Read the following text in an Australian accent: ' + text;
+      break;
+    case 'Indian':
+      ttsText = 'Read the following text in an extremely strong Indian accent with a extremely fast tempo: ' + text;
+      break;
+    default:
+      ttsText = 'Read the following text in an American accent: ' + text;
+  }
+
   for (const key of shuffledKeys) {
     try {
       const ai = new GoogleGenAI({ apiKey: key });
       response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-preview-tts',
-        contents: [{ parts: [{ text: `Read the following text in a strong ${accent} accent: ${text}` }] }],
+        contents: [{ parts: [{ text: ttsText }] }],
         config: {
           responseModalities: ['AUDIO'],
           speechConfig: {
@@ -149,9 +167,9 @@ export async function GET(request: NextRequest) {
 
       let response;
       let base64Data = '';
-      const maxRetries = 3;
-      
-      // Retry up to 3 times, cycling through all available keys
+      const maxRetries = 10;
+
+      // Retry up to 10 times, cycling through all available keys
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           response = await attemptAPICall(text, accent, keys);
