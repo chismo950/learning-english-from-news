@@ -44,6 +44,7 @@ export default function Home() {
   const [history, setHistory] = useState<NewsHistory>({})
   const [currentTab, setCurrentTab] = useState("today")
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [hasTodayData, setHasTodayData] = useState(false)
   const [isSticky, setIsSticky] = useState(false)
   const [isBannerHidden, setIsBannerHidden] = useState(false)
@@ -107,7 +108,7 @@ export default function Home() {
       setShowPreferences(true)
     }
 
-    (async ()=>{
+    (async () => {
       const isAppleSiliconMac = await detectAppleSiliconMac() === true
       console.log('isAppleSiliconMac', isAppleSiliconMac)
       setShowBanner(
@@ -118,7 +119,7 @@ export default function Home() {
         )
       )
     })();
-    
+
     setInitialized(true)
   }, [])
 
@@ -127,7 +128,7 @@ export default function Home() {
       if (bannerRef.current) {
         const headerHeight = 80; // Approximate header height
         const scrollPosition = window.scrollY;
-        
+
         if (scrollPosition > headerHeight) {
           setIsSticky(true);
         } else {
@@ -159,39 +160,89 @@ export default function Home() {
     }
 
     setValidationError(null)
+    setFetchError(null)
     setLoading(true)
 
     try {
-      const response = await fetch("/api/news/openai", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          language: nativeLanguage,
-          regions: selectedRegions,
-          level,
-        }),
+      const requestBody = JSON.stringify({
+        language: nativeLanguage,
+        regions: selectedRegions,
+        level,
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch news")
+      let newsResult = null
+      let apiSource = ""
+
+      // First, try OpenAI API
+      try {
+        console.log("Trying OpenAI API first...")
+        const openaiResponse = await fetch("/api/news/openai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: requestBody,
+        })
+
+        if (!openaiResponse.ok) {
+          throw new Error("OpenAI API request failed")
+        }
+
+        const openaiData = await openaiResponse.json()
+        if (!openaiData.news || openaiData.news.length === 0) {
+          throw new Error("OpenAI API returned empty news")
+        }
+
+        newsResult = openaiData.news
+        apiSource = "OpenAI"
+        console.log("OpenAI API succeeded")
+      } catch (openaiError) {
+        console.log("OpenAI API failed, trying Gemini API...", openaiError)
+
+        // If OpenAI fails, try Gemini API
+        try {
+          const geminiResponse = await fetch("/api/news", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: requestBody,
+          })
+
+          if (!geminiResponse.ok) {
+            throw new Error("Gemini API request failed")
+          }
+
+          const geminiData = await geminiResponse.json()
+          if (!geminiData.news || geminiData.news.length === 0) {
+            throw new Error("Gemini API returned empty news")
+          }
+
+          newsResult = geminiData.news
+          apiSource = "Gemini"
+          console.log("Gemini API succeeded")
+        } catch (geminiError) {
+          console.log("Both APIs failed:", { openaiError, geminiError })
+          throw new Error("Both APIs failed or returned empty data")
+        }
       }
 
-      const data = await response.json()
-      setNewsData(data.news)
+      // If we get here, one of the APIs succeeded
+      console.log(`News fetched successfully from ${apiSource}`)
+      setNewsData(newsResult)
+      setFetchError(null) // Clear any previous error
 
       // Save to history
       const today = getTodayString()
       // Add nativeLanguage only to the first news item
-      const newsWithLanguage = [...data.news];
+      const newsWithLanguage = [...newsResult];
       if (newsWithLanguage.length > 0) {
         newsWithLanguage[0] = {
           ...newsWithLanguage[0],
           nativeLanguage
         };
       }
-      
+
       const updatedHistory = { ...history, [today]: newsWithLanguage }
 
       // Keep only the 7 most recent days of history
@@ -212,6 +263,8 @@ export default function Home() {
       setHasTodayData(true)
     } catch (error) {
       console.error("Error fetching news:", error)
+      // If the race failed, it means both APIs failed or there was another error
+      setFetchError("Server is busy, please try again")
     } finally {
       setLoading(false)
     }
@@ -229,8 +282,9 @@ export default function Home() {
       return
     }
 
-    // Clear validation error
+    // Clear validation and fetch errors
     setValidationError(null)
+    setFetchError(null)
 
     // Save preferences
     localStorage.setItem("nativeLanguage", nativeLanguage)
@@ -258,26 +312,26 @@ export default function Home() {
       targetPercentageRef.current = 5; // Reset to 5% for next time
       return;
     }
-    
+
     // Small initial delay before starting percentage
     const initialDelay = setTimeout(() => {
       const interval = setInterval(() => {
         const increment = Math.random() * 2.9 + 0.1; // Random between 0.1% and 2%
         targetPercentageRef.current = Math.min(99.99, targetPercentageRef.current + increment);
       }, 1000);
-      
+
       return () => clearInterval(interval);
     }, 300);
-    
+
     return () => clearTimeout(initialDelay);
   }, [loading]);
-  
+
   // Effect for smooth animation
   useEffect(() => {
     if (!loading) return;
-    
+
     const step = 0.05; // Increased step size for more visible changes
-    
+
     const animationInterval = setInterval(() => {
       setDisplayPercentage(prev => {
         if (prev < targetPercentageRef.current) {
@@ -286,7 +340,7 @@ export default function Home() {
         return prev;
       });
     }, 16); // ~60fps
-    
+
     return () => clearInterval(animationInterval);
   }, [loading]);
 
@@ -305,13 +359,12 @@ export default function Home() {
         </header>
 
         {showBanner && !isBannerHidden && (
-          <div 
+          <div
             ref={bannerRef}
-            className={`mb-4 p-4 border rounded-lg shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-2 transition-all duration-300 ${
-              isSticky 
-                ? "fixed top-0 left-0 right-0 z-50 max-w-6xl mx-auto rounded-none border-t-0 bg-background" 
-                : "bg-muted/50"
-            }`}
+            className={`mb-4 p-4 border rounded-lg shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-2 transition-all duration-300 ${isSticky
+              ? "fixed top-0 left-0 right-0 z-50 max-w-6xl mx-auto rounded-none border-t-0 bg-background"
+              : "bg-muted/50"
+              }`}
           >
             <div>
               <h3 className="font-medium mb-1">📱 Download Our App</h3>
@@ -327,7 +380,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        
+
         {/* Add a spacer div when sticky and not hidden to prevent layout shift */}
         {isSticky && !isBannerHidden && <div className="mb-4 p-4 opacity-0">Spacer</div>}
 
@@ -401,6 +454,12 @@ export default function Home() {
                     </div>
                   ) : (
                     <>
+                      {fetchError && (
+                        <Alert variant="destructive" className="mb-4">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>{fetchError}</AlertDescription>
+                        </Alert>
+                      )}
                       {newsData.length > 0 ? (
                         <NewsFeed
                           news={newsData}
