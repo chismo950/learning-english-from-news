@@ -148,54 +148,67 @@ export default function Home() {
 
   // Function to prefetch audio for all sentences
   const prefetchAudioForNews = async (newsItems: NewsItem[]) => {
-    const accents = ["American", "British", "Indian"]
-    
+    // Read the user's selected accent from localStorage (set in `components/news-feed.tsx`)
+    const getSelectedAccent = (): "American" | "British" | "Indian" => {
+      try {
+        if (typeof window !== "undefined") {
+          const stored = window.localStorage.getItem("preferredAccent")
+          if (stored === "American" || stored === "British" || stored === "Indian") {
+            return stored
+          }
+        }
+      } catch (_) { }
+      return "American"
+    }
+
+    const selectedAccent = getSelectedAccent()
+
     for (const item of newsItems) {
       for (const sentence of item.sentences) {
-        for (const accent of accents) {
-          const cacheKey = `${sentence.english}_${accent}`
-          
-          // Skip if already prefetched
-          if (prefetchedAudioKeys.current.has(cacheKey)) {
-            console.log(`Skipping already prefetched audio for "${sentence.english}" in ${accent} accent`)
-            continue
-          }
-          
-          let retryCount = 0
-          const maxRetries = 2
-          
-          const prefetchAudio = async (): Promise<void> => {
-            try {
-              const response = await fetch(`/api/tts/gemini?prefetch=true&text=${encodeURIComponent(sentence.english)}&accent=${encodeURIComponent(accent)}`, {
-                method: "GET"
-              })
-              
-              if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`)
-              }
-              
-              // For prefetch requests, just get the JSON response (no audio content)
-              const result = await response.json()
-              console.log(`Prefetched audio for "${sentence.english}" in ${accent} accent:`, result)
-              
-              // Mark as prefetched
-              prefetchedAudioKeys.current.add(cacheKey)
-            } catch (error) {
-              console.error(`Failed to prefetch audio for "${sentence.english}" (${accent}):`, error)
-              
-              if (retryCount < maxRetries) {
-                retryCount++
-                console.log(`Retrying prefetch (${retryCount}/${maxRetries}) for "${sentence.english}" (${accent})`)
-                await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
-                await prefetchAudio()
-              } else {
-                console.error(`Failed to prefetch audio after ${maxRetries} retries for "${sentence.english}" (${accent})`)
-              }
+        const cacheKey = `${sentence.english}_${selectedAccent}`
+
+        // Skip if already prefetched for this accent
+        if (prefetchedAudioKeys.current.has(cacheKey)) {
+          console.log(`Skipping already prefetched audio for "${sentence.english}" in ${selectedAccent} accent`)
+          continue
+        }
+
+        let retryCount = 0
+        const maxRetries = 2
+
+        const prefetchAudio = async (): Promise<void> => {
+          try {
+            const response = await fetch(`/api/tts/gemini?prefetch=true&text=${encodeURIComponent(sentence.english)}&accent=${encodeURIComponent(selectedAccent)}`, {
+              method: "GET"
+            })
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`)
+            }
+
+            // For prefetch requests, just get the JSON response (no audio content)
+            const result = await response.json()
+            console.log(`Prefetched audio for "${sentence.english}" in ${selectedAccent} accent:`, result)
+
+            // Mark as prefetched
+            prefetchedAudioKeys.current.add(cacheKey)
+          } catch (error) {
+            console.error(`Failed to prefetch audio for "${sentence.english}" (${selectedAccent}):`, error)
+
+            if (retryCount < maxRetries) {
+              retryCount++
+              console.log(`Retrying prefetch (${retryCount}/${maxRetries}) for "${sentence.english}" (${selectedAccent})`)
+              await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+              await prefetchAudio()
+            } else {
+              console.error(`Failed to prefetch audio after ${maxRetries} retries for "${sentence.english}" (${selectedAccent})`)
             }
           }
-          
-          await prefetchAudio()
         }
+
+        await prefetchAudio()
+        // Wait 5 seconds between each prefetch request to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 5000))
       }
     }
   }
@@ -288,7 +301,7 @@ export default function Home() {
       console.log(`News fetched successfully from ${apiSource}`)
       setNewsData(newsResult)
       setFetchError(null) // Clear any previous error
-      
+
       // Prefetch audio for all sentences
       prefetchAudioForNews(newsResult)
 
