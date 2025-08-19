@@ -153,8 +153,7 @@ export default function Home() {
     for (const item of newsItems) {
       for (const sentence of item.sentences) {
         for (const accent of accents) {
-          const accentCode = accent === "American" ? "en-US" : accent === "British" ? "en-GB" : "en-IN"
-          const cacheKey = `${sentence.english}_${accentCode}`
+          const cacheKey = `${sentence.english}_${accent}`
           
           // Skip if already prefetched
           if (prefetchedAudioKeys.current.has(cacheKey)) {
@@ -167,7 +166,7 @@ export default function Home() {
           
           const prefetchAudio = async (): Promise<void> => {
             try {
-              const response = await fetch(`/api/tts/gemini?prefetch=true&text=${encodeURIComponent(sentence.english)}&accent=${encodeURIComponent(accentCode)}`, {
+              const response = await fetch(`/api/tts/gemini?prefetch=true&text=${encodeURIComponent(sentence.english)}&accent=${encodeURIComponent(accent)}`, {
                 method: "GET"
               })
               
