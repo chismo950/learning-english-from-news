@@ -53,6 +53,7 @@ export default function Home() {
   const [displayPercentage, setDisplayPercentage] = useState(0);
   const targetPercentageRef = useRef(5); // Start at 5% to show immediate progress
   const bannerRef = useRef<HTMLDivElement>(null)
+  const prefetchedAudioKeys = useRef<Set<string>>(new Set())
 
   // Get today's date in YYYY-MM-DD format
   const getTodayString = () => {
@@ -152,22 +153,22 @@ export default function Home() {
     for (const item of newsItems) {
       for (const sentence of item.sentences) {
         for (const accent of accents) {
+          const accentCode = accent === "American" ? "en-US" : accent === "British" ? "en-GB" : "en-IN"
+          const cacheKey = `${sentence.english}_${accentCode}`
+          
+          // Skip if already prefetched
+          if (prefetchedAudioKeys.current.has(cacheKey)) {
+            console.log(`Skipping already prefetched audio for "${sentence.english}" in ${accent} accent`)
+            continue
+          }
+          
           let retryCount = 0
           const maxRetries = 2
           
           const prefetchAudio = async (): Promise<void> => {
             try {
-              const accentCode = accent === "American" ? "en-US" : accent === "British" ? "en-GB" : "en-IN"
-              
-              const response = await fetch("/api/tts?prefetch=true", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  text: sentence.english,
-                  accent: accentCode
-                })
+              const response = await fetch(`/api/tts/gemini?prefetch=true&text=${encodeURIComponent(sentence.english)}&accent=${encodeURIComponent(accentCode)}`, {
+                method: "GET"
               })
               
               if (!response.ok) {
@@ -177,6 +178,9 @@ export default function Home() {
               // For prefetch requests, just get the JSON response (no audio content)
               const result = await response.json()
               console.log(`Prefetched audio for "${sentence.english}" in ${accent} accent:`, result)
+              
+              // Mark as prefetched
+              prefetchedAudioKeys.current.add(cacheKey)
             } catch (error) {
               console.error(`Failed to prefetch audio for "${sentence.english}" (${accent}):`, error)
               

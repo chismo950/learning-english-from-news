@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
   // Parse optional parameters
   const accent = request.nextUrl.searchParams.get('accent') || 'American';
   const output = request.nextUrl.searchParams.get('output') || 'wav'; // 'wav' or 'base64'
+  const prefetch = request.nextUrl.searchParams.get('prefetch') === 'true';
   
   // Wrap entire processing in try/catch to handle API errors
   try {
@@ -227,6 +228,14 @@ export async function GET(request: NextRequest) {
 
       // Cache the generated audio
       await cacheAudio(text, accent, wavBuffer);
+    }
+
+    // If prefetch mode, just return success without audio data
+    if (prefetch) {
+      return new Response(JSON.stringify({ success: true, cached: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // If JSON/base64 output requested, return base64 string
