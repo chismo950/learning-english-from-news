@@ -87,6 +87,8 @@ export default function Home() {
     // If we have today's data, load it
     if (hasTodaysData) {
       setNewsData(parsedHistory[today])
+      // Also prefetch audio for existing news data
+      prefetchAudioForNews(parsedHistory[today])
     }
 
     // Set stored preferences
@@ -142,6 +144,58 @@ export default function Home() {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  // Function to prefetch audio for all sentences
+  const prefetchAudioForNews = async (newsItems: NewsItem[]) => {
+    const accents = ["American", "British", "Indian"]
+    
+    for (const item of newsItems) {
+      for (const sentence of item.sentences) {
+        for (const accent of accents) {
+          let retryCount = 0
+          const maxRetries = 2
+          
+          const prefetchAudio = async (): Promise<void> => {
+            try {
+              const accentCode = accent === "American" ? "en-US" : accent === "British" ? "en-GB" : "en-IN"
+              
+              const response = await fetch("/api/tts?prefetch=true", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  text: sentence.english,
+                  accent: accentCode
+                })
+              })
+              
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`)
+              }
+              
+              // For prefetch requests, just get the JSON response (no audio content)
+              const result = await response.json()
+              console.log(`Prefetched audio for "${sentence.english}" in ${accent} accent:`, result)
+            } catch (error) {
+              console.error(`Failed to prefetch audio for "${sentence.english}" (${accent}):`, error)
+              
+              if (retryCount < maxRetries) {
+                retryCount++
+                console.log(`Retrying prefetch (${retryCount}/${maxRetries}) for "${sentence.english}" (${accent})`)
+                await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+                await prefetchAudio()
+              } else {
+                console.error(`Failed to prefetch audio after ${maxRetries} retries for "${sentence.english}" (${accent})`)
+              }
+            }
+          }
+          
+          await prefetchAudio()
+        }
+      }
+    }
+  }
 
   const fetchNews = async () => {
     if (!initialized) return
@@ -231,6 +285,9 @@ export default function Home() {
       console.log(`News fetched successfully from ${apiSource}`)
       setNewsData(newsResult)
       setFetchError(null) // Clear any previous error
+      
+      // Prefetch audio for all sentences
+      prefetchAudioForNews(newsResult)
 
       // Save to history
       const today = getTodayString()

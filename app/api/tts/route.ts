@@ -76,9 +76,12 @@ async function getCachedAudio(text: string, accent: string) {
   return audioData;
 }
 
-// Only accept POST requests for TTS
+// Accept POST requests for TTS
 export async function POST(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const isPrefetch = searchParams.get('prefetch') === 'true';
+    
     const body = await request.json();
     const text = body.text;
     const accent = body.accent || 'en-US'; // en-US, en-GB, en-IN
@@ -92,6 +95,14 @@ export async function POST(request: NextRequest) {
 
     // Get cached or fetch new audio directly from Redis or external API
     const { base64Audio, contentType } = await getCachedAudio(text, accent);
+    
+    // If this is a prefetch request, just return success without audio content
+    if (isPrefetch) {
+      return NextResponse.json(
+        { success: true, cached: true },
+        { status: 200 }
+      );
+    }
     
     // Convert back to buffer and return as audio file
     const buffer = Buffer.from(base64Audio, 'base64');
