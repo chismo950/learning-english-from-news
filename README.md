@@ -13,6 +13,12 @@ This project is continuously deployed to Vercel at https://news.english-dictiona
 ## Project Overview
 This App helps learners practice listening to a wide range of English accents. After the user picks a native language and target news regions, the frontend calls a backend API that, via Kong, reaches OpenAI. The model actively researches the latest news, orders it by recency, produces concise summaries, and returns the results — an agentic loop of autonomous browsing, reasoning, and synthesis. Once the frontend receives the news data, it shows them in the UI and can hand each article to Gemini to generate accent-specific audio clips, giving learners fresh material for accent training.
 
+Even with zero promotion after launch, more than 100 learners from dozens of countries explored the app in the past 30 days (Aug 29 – Sep 29, 2025). The snapshots below show the visit volume and geographic spread.
+
+![Visitor sessions](docs/visitors.jpg)
+
+![Countries represented](docs/countries.jpg)
+
 ## Intro Video
 ▶️ [Watch the project walkthrough](https://peach-cautious-rattlesnake-559.mypinata.cloud/ipfs/bafybeibduxm3hiovtjpjpngrbvbasfoskjjioiddggyeo6wwnwxroqdnf4)
 
