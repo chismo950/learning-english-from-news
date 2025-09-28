@@ -1,12 +1,12 @@
-# Learning English from News
+# Learning English from the News(2025 Kong Hackathon Project)
 
 ## Team
 - Lisen Huang
 
 ## Quick Start
 1. Copy the example environment variables: `cp .env.local.example .env.local`, then add your own API keys.
-2. Install dependencies: `npm install`.
-3. Run the development server: `npm run dev`.
+2. Install dependencies: `pnpm install`.
+3. Run the development server: `pnpm run dev`.
 
 This project is continuously deployed to Vercel at https://news.english-dictionary.app, so you can preview the latest build without any setup.
 
@@ -14,7 +14,7 @@ This project is continuously deployed to Vercel at https://news.english-dictiona
 Learning English from News is an agentic AI news tutor. It curates upbeat, recent articles from different regions, rewrites them into bite-sized study material, and translates each sentence into the learner's preferred language. The agent automates the entire flow—prompting the model, validating JSON output, caching responses, and serving tailored lessons—so learners always receive relevant, curriculum-friendly content. That end-to-end autonomy is what grounds the project in the Agentic AI theme.
 
 ## Intro Video
-[Watch the project walkthrough](./video.mp4)
+▶️ [Watch the project walkthrough](https://peach-cautious-rattlesnake-559.mypinata.cloud/ipfs/bafybeibduxm3hiovtjpjpngrbvbasfoskjjioiddggyeo6wwnwxroqdnf4)
 
 ## Kong API Usage
 - The news generation logic lives in `app/api/news/openai/route.ts`. It calls the Kong-hosted OpenAI proxy at `https://kong-5b384bb73cauxw7mq.kongcloud.dev/openai/chat` so every request benefits from Kong's gateway features (auth, traffic shaping, observability).
