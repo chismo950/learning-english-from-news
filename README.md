@@ -1,4 +1,4 @@
-# Learning English from the News(2025 Kong Hackathon Project)
+# Learning English From The News(2025 Kong Hackathon Project)
 
 ## Team
 - Lisen Huang
