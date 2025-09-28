@@ -1,39 +1,44 @@
-```bash
-pnpm install && pnpm dev
-```
+# Learning English from News
 
-prompts
-```typescript
-const prompt = `
-Find the 5 latest news articles from ${region === "international" ? "international news" : region}.
+## Team
+- Lisen Huang
 
-For each article:
-1. Break down the article into 3-5 key sentences.
-2. For each sentence, provide:
-   - The English version (using simple vocabulary from the 3000 most common English words when possible)
-   - A translation in ${language} language
+## Quick Start
+1. Copy the example environment variables: `cp .env.local.example .env.local`, then add your own API keys.
+2. Install dependencies: `npm install`.
+3. Run the development server: `npm run dev`.
 
-IMPORTANT REQUIREMENTS:
-- Use simple English vocabulary from the 3000 most common English words when possible.
+This project is continuously deployed to Vercel at https://news.english-dictionary.app, so you can preview the latest build without any setup.
 
-Format your response as a JSON array with this structure:
-[
-  {
-    "title": "Article title",
-    "titleTranslated": "Translated title",
-    "region": "${region}",
-    "sentences": [
+## Project Overview
+Learning English from News is an agentic AI news tutor. It curates upbeat, recent articles from different regions, rewrites them into bite-sized study material, and translates each sentence into the learner's preferred language. The agent automates the entire flow—prompting the model, validating JSON output, caching responses, and serving tailored lessons—so learners always receive relevant, curriculum-friendly content. That end-to-end autonomy is what grounds the project in the Agentic AI theme.
+
+## Intro Video
+[Watch the project walkthrough](./video.mp4)
+
+## Kong API Usage
+- The news generation logic lives in `app/api/news/openai/route.ts`. It calls the Kong-hosted OpenAI proxy at `https://kong-5b384bb73cauxw7mq.kongcloud.dev/openai/chat` so every request benefits from Kong's gateway features (auth, traffic shaping, observability).
+- The endpoint accepts a JSON payload with `language`, `regions`, `level`, and optional `skipCache`. It returns curated articles with translations.
+
+Example invocation inside the route:
+
+```ts
+const res = await fetch("https://kong-5b384bb73cauxw7mq.kongcloud.dev/openai/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+  },
+  body: JSON.stringify({
+    model: "gpt-4.1",
+    messages: [
       {
-        "english": "English sentence",
-        "translated": "Translated sentence"
-      }
+        role: "user",
+        content: prompt,
+      },
     ],
-    "source": "Source name",
-    "sourceUrl": "URL to the article",
-    "publishedDate": "Publication date and time"
-  }
-]
-
-Return ONLY the JSON with no additional text, no markdown formatting, and no code blocks.
-`
+  }),
+});
 ```
+
+The same payload works against the Vercel deployment by swapping the base URL with https://news.english-dictionary.app.
