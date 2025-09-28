@@ -14,10 +14,6 @@ For each article:
    - A translation in ${language} language
 
 IMPORTANT REQUIREMENTS:
-- If the news is related to China, ONLY cite Chinese media sources with domains ending in .cn
-- If the news is not related to China, you can cite any media source worldwide.
-- DO NOT include any news that mentions Chinese leadership by name.
-- DO NOT provide any politically sensitive news related to China.
 - Use simple English vocabulary from the 3000 most common English words when possible.
 
 Format your response as a JSON array with this structure:
