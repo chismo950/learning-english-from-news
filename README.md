@@ -11,7 +11,7 @@
 This project is continuously deployed to Vercel at https://news.english-dictionary.app, so you can preview the latest build without any setup.
 
 ## Project Overview
-Learning English from News is an agentic AI news tutor. It curates upbeat, recent articles from different regions, rewrites them into bite-sized study material, and translates each sentence into the learner's preferred language. The agent automates the entire flow—prompting the model, validating JSON output, caching responses, and serving tailored lessons—so learners always receive relevant, curriculum-friendly content. That end-to-end autonomy is what grounds the project in the Agentic AI theme.
+This App helps learners practice listening to a wide range of English accents. After the user picks a native language and target news regions, the frontend calls a backend API that, via Kong, reaches OpenAI. The model actively researches the latest news, orders it by recency, produces concise summaries, and returns the results — an agentic loop of autonomous browsing, reasoning, and synthesis. Once the frontend receives the news data, it shows them in the UI and can hand each article to Gemini to generate accent-specific audio clips, giving learners fresh material for accent training.
 
 ## Intro Video
 ▶️ [Watch the project walkthrough](https://peach-cautious-rattlesnake-559.mypinata.cloud/ipfs/bafybeibduxm3hiovtjpjpngrbvbasfoskjjioiddggyeo6wwnwxroqdnf4)
