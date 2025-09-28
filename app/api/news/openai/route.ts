@@ -5,7 +5,6 @@
  * curl -X POST http://localhost:6397/api/news/openai -H "Content-Type: application/json" -d '{"language": "Chinese", "regions": ["international"], "level": "advanced", "skipCache": true}'
  */
 
-import OpenAI from "openai";
 import { unstable_cache } from "next/cache";
 import { Redis } from "@upstash/redis";
 
@@ -15,10 +14,8 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN || "",
 });
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const KONG_OPENAI_CHAT_URL =
+  "https://kong-5b384bb73cauxw7mq.kongcloud.dev/openai/chat";
 
 // Helper function to generate consistent Redis key
 function generateRedisKey(
@@ -146,28 +143,68 @@ RETURN ONLY THE JSON ARRAY ABOVE. NO OTHER TEXT.
 `;
 
     try {
-      const res = await openai.responses.create({
-        /**
-         * gpt-4o: 22s
-         * gpt-4.5-preview: 36s
-         * gpt-4.1: 14s
-         */
-        model: "gpt-4.1",
-        input: prompt,
-        stream: false,
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error("OPENAI_API_KEY is not configured");
+      }
+
+      const res = await fetch(KONG_OPENAI_CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1",
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
       });
 
-      // 提取响应内容
-      const response = res.output?.[0];
-      let responseText = "";
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("OpenAI API error:", res.status, errorText);
+        throw new Error(
+          `OpenAI API request failed with status ${res.status}`
+        );
+      }
 
-      if (response && "content" in response) {
-        responseText =
-          response.content
-            ?.map((c: any) => ("text" in c ? c.text : ""))
-            .join("\n") || "";
-      } else if (response && "text" in response) {
-        responseText = (response as any).text || "";
+      const data = await res.json();
+
+      let responseText = "";
+      const firstChoice = data?.choices?.[0];
+      const firstMessage = firstChoice?.message;
+
+      if (firstMessage) {
+        const { content } = firstMessage;
+
+        if (typeof content === "string") {
+          responseText = content;
+        } else if (Array.isArray(content)) {
+          responseText = content
+            .map((item: any) => {
+              if (typeof item === "string") {
+                return item;
+              }
+              if (item && typeof item === "object" && "text" in item) {
+                return item.text;
+              }
+              return "";
+            })
+            .filter(Boolean)
+            .join("\n");
+        }
+      }
+
+      if (!responseText && typeof firstChoice?.text === "string") {
+        responseText = firstChoice.text;
+      }
+
+      if (!responseText && typeof data?.output_text === "string") {
+        responseText = data.output_text;
       }
 
       if (!responseText) {
