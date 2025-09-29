@@ -2,6 +2,8 @@
 
 ## Team
 - Lisen Huang
+- Michael Tenorio
+- Shiela Marie Umali
 
 ## Quick Start
 1. Copy the example environment variables: `cp .env.local.example .env.local`, then add your own API keys.
